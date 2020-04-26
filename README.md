@@ -302,6 +302,11 @@ Use at your own risks (a.k.a. "no tests").
 
 Don't [drink bleach](https://twitter.com/RandyRainbow/status/1254062239595859975).
 
+## Thanks
+
+Thanks [@devatoria](https://github.com/Devatoria) for cobra layout inspiration
+& [@earzur](https://github.com/earzur) for β-testing.
+
 ## Licence
 
 WTFPL
