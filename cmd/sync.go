@@ -13,15 +13,24 @@ import (
 	toggl "github.com/jason0x43/go-toggl"
 )
 
+var validArgs = []string{
+	"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+	"mon", "tue", "wed", "thu", "fri", "sat", "sun",
+	"today", "yesterday",
+	"week", "month", "year",
+}
+
 var syncCmd = &cobra.Command{
 	Use:     "sync",
 	Short:   "syncs time entries from toggl to jira",
 	Example: "toji sync yesterday --to today",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+
 		return doSync(args[0])
 	},
 	SilenceUsage: true,
+	ValidArgs:    validArgs,
 }
 
 var (
@@ -34,6 +43,11 @@ func init() {
 	syncCmd.Flags().StringVarP(&toDate, "to", "t", "", "ending date")
 	syncCmd.Flags().BoolVarP(&dryRun, "dryrun", "n", false, "do not update Jira entries")
 	syncCmd.Flags().StringSliceVarP(&onlyIssues, "only", "o", nil, "only update these comma-separated entries")
+
+	syncCmd.RegisterFlagCompletionFunc("to", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		return validArgs, cobra.ShellCompDirectiveDefault
+	})
+
 	toggl.DisableLog()
 	checkProfile()
 }
