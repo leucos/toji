@@ -241,33 +241,61 @@ and 23h59 for the end value.
 Finally, weekdays have short form equivalents (`mon`, `tue`, `wed`, `thu`,
 `fri`, `sat`, `sun`) for convenience
 
-#### Example
+#### Examples
 
-`toji sync yesterday` will sync all Toggl entries between yesterday at 00h00
-  and yesterday at 23h59
+**sync all Toggl entries between yesterday at 00h00 and yesterday at 23h59**
 
-`toji sync yesterday -n` will show which entries would be added to Jira worklog but not add them (dry run mode)
+```bash
+toji sync yesterday
+```
 
-`toji sync yesterday -o DEV-55,DEV-69` will sync all Toggl entries found for
-issues DEV-55 and DEV-69 between yesterday at 00h00 and yesterday at 23h59
+**show which entries would be added to Jira worklog but not add them (dry run
+mode)**
 
-`toji sync week` will sync all Toggl entries between monday 00h00 of the
-  current week and sunday 23h59 of the current week
+```bash
+toji sync yesterday -n
+```
 
-`toji sync tuesday --to thursday` will sync all Toggl entries between last
-  tuesday at 00h00 and last thursday at 23h59 (you can not invoke this on tue,
-  wednesday or thursday of course since `end` would be before `start`)
+**sync all Toggl entries found for issues DEV-55 and DEV-69 between yesterday
+at 00h00 and yesterday at 23h59**
 
-`toji sync tue --to thu` does the same as above
+```bash
+toji sync yesterday -o DEV-55,DEV-69
+```
 
-`toji sync 202004121200 --to tue` will sync all Toggl entries between last
-  march 12th 2020 at noon and last tuesday at 23h59
+**sync all Toggl entries between monday 00h00 of the current week and sunday
+23h59 of the current week**
 
-when symbolic datespecs are used, the generated date depends on context.
-the start date is 00:00 in the first day of the period.
-if used in to, it will be the 23:59 in the last day of the period.
-if -to is omitted, the first value is implied
-(e.g. `toji sync yesterday` is equivalent to `toji sync yesterday -to yesterday`)
+```bash
+toji sync week
+```
+
+**sync all Toggl entries between last tuesday at 00h00 and last thursday at
+23h59 (you can not invoke this on tue, wednesday or thursday of course since
+`end` would be before `start`)**
+
+```bash
+toji sync tuesday --to thursday
+```
+
+**same as above**
+
+```
+toji sync tue --to thu
+```
+
+**sync all Toggl entries between last march 12th 2020 at noon and last tuesday
+at 23h59**
+
+```
+toji sync 202004121200 --to tue
+```
+
+When symbolic datespecs (e.g. `week`, `yesterday`, ...) are used, the generated
+date depends on context. the start date is 00:00 in the first day of the
+period. if used in to, it will be the 23:59 in the last day of the period. if
+-to is omitted, the first value is implied (e.g. `toji sync yesterday` is
+equivalent to `toji sync yesterday -to yesterday`)
 
 ## Caveats
 
