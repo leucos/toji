@@ -77,13 +77,18 @@ func doSync(fromDate string) error {
 	for _, e := range entries {
 		textDate := e.Start.Format("Mon 2006/01/02")
 		if textDate != currentDate {
-			fmt.Printf("\n%s\n==============\n", textDate)
+			fmt.Printf("\n%s\n==============\n\n", textDate)
 			currentDate = textDate
 			currentProject = ""
 		}
 
+		// fmt.Printf("entry times: %s / %s\n", e.StartTime(), e.StopTime())
 		project := getTicketFromEntry(e.Description)
 
+		if e.StopTime().IsZero() {
+			fmt.Printf("\t%s\n\t\tskipping currently running time entry %s\n", project, e.Description)
+			continue
+		}
 		if project == "" {
 			continue
 		}
@@ -96,7 +101,7 @@ func doSync(fromDate string) error {
 		// Only redisplay project description if the project is not the same as
 		// previous iteration
 		if project != currentProject {
-			fmt.Printf("\n\t%s\n", e.Description)
+			fmt.Printf("\t%s\n", e.Description)
 			currentProject = project
 		}
 
@@ -106,6 +111,7 @@ func doSync(fromDate string) error {
 			continue
 		}
 	}
+	fmt.Println()
 	return nil
 }
 
