@@ -36,12 +36,15 @@ var syncCmd = &cobra.Command{
 var (
 	toDate     string
 	dryRun     bool
+	utc        bool
 	onlyIssues []string
 )
 
 func init() {
 	syncCmd.Flags().StringVarP(&toDate, "to", "t", "", "ending date")
 	syncCmd.Flags().BoolVarP(&dryRun, "dryrun", "n", false, "do not update Jira entries")
+	syncCmd.Flags().BoolVarP(&utc, "utc", "u", false, "display entries using UTC in the termina")
+
 	syncCmd.Flags().StringSliceVarP(&onlyIssues, "only", "o", nil, "only update these comma-separated entries")
 
 	syncCmd.RegisterFlagCompletionFunc("to", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -241,12 +244,21 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 	dur := time.Duration(time.Duration(togglEntry.Duration) * time.Second)
 	durText := fmt.Sprintf("%dh %dm %ds", int(dur.Hours()), int(dur.Minutes())%60, int(dur.Seconds())%60)
 
-	startText := togglEntry.StartTime().Format("15:04")
-	stopText := togglEntry.StopTime().Format("15:04")
+	refStart := togglEntry.StartTime().Local()
+	refStop := togglEntry.StopTime().Local()
+
+	if utc {
+		refStart = togglEntry.StartTime().UTC()
+		refStop = togglEntry.StopTime().UTC()
+	}
+
+	startText := refStart.Format("15:04")
+	stopText := refStop.Format("15:04")
+
 	// Get difference in days between start and stop
-	days := togglEntry.StopTime().Sub(togglEntry.StartTime()).Hours() / 24
+	days := refStop.Sub(refStart).Hours() / 24
 	// Add 1 if task has been stopped after midnight
-	if togglEntry.StopTime().Hour() < togglEntry.StartTime().Hour() {
+	if refStop.Hour() < refStart.Hour() {
 		days++
 	}
 	if days >= 1 {
