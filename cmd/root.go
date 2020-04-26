@@ -17,29 +17,14 @@ var rootCmd = &cobra.Command{
 var (
 	configFile     string
 	currentProfile string
-	// currentConfiguration *Configuration
+	// Version of current binary
+	Version string
+	// BuildDate of current binary
+	BuildDate string
 )
-
-// // Configuration selected
-// type Configuration struct {
-// 	Jira  JiraConfig  `yaml:"jira"`
-// 	Toggl TogglConfig `yaml:"toggl"`
-// }
-
-// // JiraConfig holds a Jira configuration
-// type JiraConfig struct {
-// 	URL   string `yaml:"url"`
-// 	Token string `yaml:"token"`
-// }
-
-// // TogglConfig holds a Toggl configuration
-// type TogglConfig struct {
-// 	Token string `yaml:"token"`
-// }
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	// cobra.OnInitialize(initConfig, checkProfile)
 
 	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", guessConfig(), "configuration file")
 	rootCmd.PersistentFlags().StringVarP(&currentProfile, "profile", "p", "", "profile to use")
@@ -50,6 +35,7 @@ func Run() error {
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(syncCmd)
+	rootCmd.AddCommand(versionCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		return err

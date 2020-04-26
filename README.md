@@ -4,12 +4,25 @@
 [![pipeline status](https://gitlab.com/leucos/toji/badges/master/pipeline.svg)](https://gitlab.com/leucos/toji/-/commits/master)
 [![Go Report Card](https://goreportcard.com/badge/gitlab.com/leucos/toji)](https://goreportcard.com/report/gitlab.com/leucos/toji)
 
-Toji is a Toggle ➡ Jira bridge.
+Toji is a Toggle ➡ Jira bridge. Make time ~tracking fun again~ less painful.
 
 ## Objectives
 
 Toji takes your Toggl time entries and adds them in Jira issues worklog. No
 need to do it manually anymore.
+
+If you use the [Toggl
+Button](https://chrome.google.com/webstore/detail/toggl-button-productivity/oejgccbfbmkkpaidnkphaiaecficdnfn)
+brower extension and configure Jira integration, your Toggl tasks will start
+with the Jira issue. Backporting Toggl time entries to Jia will be a breeze
+using Toji.
+
+## Install
+
+Go to [releases pages](https://gitlab.com/leucos/toji/-/releases), download the
+binary for your architecture.
+
+You can also [build](#building) it yourself.
 
 ## Usage
 
@@ -36,11 +49,39 @@ See [detailed usage](#detailed-usage) for more information.
 go build .
 ```
 
+A `Makefile` is also provided if you wish with the following targets:
+
+| target           | description                                       |
+| ---------------- | ------------------------------------------------- |
+| all              | Build binary for your arch (default)              |
+| linux            | Build linux binary                                |
+| darwin           | Build MacOS binary                                |
+| windows          | Build Windows binary                              |
+| release          | Build programall binaries for release             |
+| test-bench       | Run benchmarks                                    |
+| test-short       | Run only short tests                              |
+| test-verbose     | Run tests in verbose mode with coverage reporting |
+| test-race        | Run tests with race detector                      |
+| check test tests | Run tests                                         |
+| test-xml         | Run tests with xUnit output                       |
+| test-coverage    | Run coverage tests                                |
+| lint             | Run golint                                        |
+| fmt              | Run gofmt on all source files                     |
+| clean            | Cleanup everything                                |
+
 ## Configuration
 
 See [Init](#init).
 
 ## Detailed usage
+
+You can see the complete usage executing:
+
+```bash
+toji -h
+```
+
+The more interesting parts are highlighted below.
 
 ### Completion
 
@@ -185,9 +226,19 @@ if used in to, it will be the 23:59 in the last day of the period.
 if -to is omitted, the first value is implied
 (e.g. `toji sync yesterday` is equivalent to `toji sync yesterday -to yesterday`)
 
+## Caveats
+
+Toji is in GoodEnough™ (i.e. "works on my machine") state.
+
+Use at your own risks (a.k.a. "no tests").
+
+Don't [drink bleach](https://twitter.com/RandyRainbow/status/1254062239595859975).
+
 ## Licence
 
 WTFPL
+
+Contribs welcome.
 
 ## References
 

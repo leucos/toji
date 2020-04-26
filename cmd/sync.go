@@ -57,7 +57,7 @@ func doSync(fromDate string) error {
 		return fmt.Errorf("unable to parse time using provided '%s' or '%s': %v", fromDate, toDate, err)
 	}
 
-	fmt.Printf("Syncing toggl entries between %s (%s) and %s (%s)\n", fromDate, from, toDate, to)
+	fmt.Printf("\nSyncing toggl entries between %s and %s\n", from, to)
 
 	session := toggl.OpenSession(getConfig("toggle.token"))
 	entries, err := session.GetTimeEntries(from, to)
@@ -91,7 +91,7 @@ func doSync(fromDate string) error {
 		// Only redisplay project description if the project is not the same as
 		// previous iteration
 		if project != currentProject {
-			fmt.Printf("\t%s\n", e.Description)
+			fmt.Printf("\n\t%s\n", e.Description)
 			currentProject = project
 		}
 
@@ -148,6 +148,11 @@ func parseTimeSpec(s string, e string) (time.Time, time.Time, error) {
 			start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.Local)
 			break
 		}
+		if d, err := time.Parse("200601021504", s); err == nil {
+			start = d
+			break
+		}
+		return start, end, fmt.Errorf("unable to parse start date (%s)", end)
 	}
 
 	switch e {
@@ -175,6 +180,11 @@ func parseTimeSpec(s string, e string) (time.Time, time.Time, error) {
 			end = time.Date(end.Year(), end.Month(), end.Day(), 23, 59, 59, 0, time.Local)
 			break
 		}
+		if d, err := time.Parse("200601021504", e); err == nil {
+			end = d
+			break
+		}
+		return start, end, fmt.Errorf("unable to parse end date (%s)", end)
 	}
 
 	if start.After(end) {
@@ -216,8 +226,26 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 	dur := time.Duration(time.Duration(togglEntry.Duration) * time.Second)
 	durText := fmt.Sprintf("%dh %dm %ds", int(dur.Hours()), int(dur.Minutes())%60, int(dur.Seconds())%60)
 
+	startText := togglEntry.StartTime().Format("15:04")
+	stopText := togglEntry.StopTime().Format("15:04")
+	// Get difference in days between start and stop
+	days := togglEntry.StopTime().Sub(togglEntry.StartTime()).Hours() / 24
+	// Add 1 if task has been stopped after midnight
+	if togglEntry.StopTime().Hour() < togglEntry.StartTime().Hour() {
+		days++
+	}
+	if days >= 1 {
+		stopText = fmt.Sprintf("%s j+%d", stopText, int(days))
+	}
+
 	if dryRun {
-		fmt.Printf("\t\twould insert %s from entry %d to %s's worklog entry\n", durText, togglEntry.ID, issueID)
+		fmt.Printf("\t\t[%s - %s] would insert %s from entry %d to %s's worklog entry\n",
+			startText,
+			stopText,
+			durText,
+			togglEntry.ID,
+			issueID,
+		)
 		return nil
 	}
 
@@ -237,7 +265,14 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 		return err
 	}
 
-	fmt.Printf("\t\tinserted %s from entry %d to %s's worklog entry\n", durText, togglEntry.ID, issueID)
+	fmt.Printf("\t\t[%s - %s] inserted %s from entry %d to %s's worklog entry\n",
+		startText,
+		stopText,
+		durText,
+		togglEntry.ID,
+		issueID,
+	)
+
 	return nil
 }
 
