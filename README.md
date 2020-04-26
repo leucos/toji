@@ -189,8 +189,7 @@ If a profile (of default) already exists, `toji` will refuse to overwrite it.
 
 Sync will fetch Toggl time entries in the requested period and add them to
 corresponding Jira issues. Toji will try to match the issue key in the
-beginning of the Toggl entry description. If you set the `--anywhere` flag,
-Toji will look for a Jira issue anywhere in the Toggl comment.
+beginning of the Toggl entry description.
 
 For instance, if a Toggl entry has the description `DEV-123 Create a toggl ->
 jira bridge`, Toji will match `DEV-123` as the issue key and try to update it's
@@ -203,7 +202,7 @@ Toggl time entry twice in an issue. In this respect, Toji is idempotent.
 The general command is:
 
 ```
-toji sync <start> [--to <end>] [--dryrun] [--only issue1,issue2] [--anywhere]
+toji sync <start> [--to <end>] [--dryrun] [--only issue1,issue2]
 ```
 
 where:

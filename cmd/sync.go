@@ -27,14 +27,12 @@ var syncCmd = &cobra.Command{
 var (
 	toDate     string
 	dryRun     bool
-	anywhere   bool
 	onlyIssues []string
 )
 
 func init() {
 	syncCmd.Flags().StringVarP(&toDate, "to", "t", "", "ending date")
 	syncCmd.Flags().BoolVarP(&dryRun, "dryrun", "n", false, "do not update Jira entries")
-	syncCmd.Flags().BoolVarP(&anywhere, "anywhere", "a", false, "match Jira ticket anywhere in the Toggl comment (by default only the beginning is matched)")
 	syncCmd.Flags().StringSliceVarP(&onlyIssues, "only", "o", nil, "only update these comma-separated entries")
 	toggl.DisableLog()
 	checkProfile()
@@ -188,10 +186,8 @@ func parseTimeSpec(s string, e string) (time.Time, time.Time, error) {
 }
 
 func getTicketFromEntry(e string) string {
-	exp := `^[A-Z]+-\d+\s`
-	if anywhere {
-		exp = `\s[A-Z]+-\d+\s`
-	}
+	exp := `[A-Z]+-\d+\s`
+
 	re := regexp.MustCompile(exp)
 
 	project := string(re.Find([]byte(e)))
