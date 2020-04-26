@@ -9,7 +9,7 @@ Toji is a Toggle ➡ Jira bridge.
 ## Objectives
 
 Toji takes your Toggl time entries and adds them in Jira issues worklog. No
-need to do it manually anymore. 
+need to do it manually anymore.
 
 ## Usage
 
@@ -144,7 +144,7 @@ Start and end times can be specified in a variety of ways.
 - `YYYYMMDDHHMM`: absolute date
 
 If the end date (`--to`) is not specified, the same value as `start` will be
-used (e.g. `toji sync yesterday` is equivalent to 
+used (e.g. `toji sync yesterday` is equivalent to
 `toji sync yesterday -to yesterday`)
 
 This is quite obvious but has to be said: the `start` date must precede the
