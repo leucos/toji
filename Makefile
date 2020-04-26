@@ -49,7 +49,7 @@ release: windows darwin linux ; $(info $(M) stripping release executable for Lin
 	$Q gzip $(BIN)/$(PACKAGE)-amd64-$(VERSION)
 	$Q gzip $(BIN)/$(PACKAGE)-darwin-$(VERSION)
 	$Q gzip $(BIN)/$(PACKAGE)-win-$(VERSION)
-	$Q $(BIN)/$(PACKAGE) -version
+	$Q $(BIN)/$(PACKAGE) version
 
 # Tools
 
