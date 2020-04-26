@@ -1,10 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
-	"github.com/leucos/toji/cmd"
+	"gitlab.com/leucos/toji/cmd"
 )
 
 func init() {
@@ -16,7 +15,7 @@ func init() {
 // Run executes Toji
 func main() {
 	if err := cmd.Run(); err != nil {
-		fmt.Println(err)
+		// fmt.Println(err)
 		os.Exit(1)
 	}
 }

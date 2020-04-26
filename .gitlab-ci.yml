@@ -1,0 +1,70 @@
+include:
+  - template: SAST.gitlab-ci.yml
+
+variables:
+  SAST_DISABLE_DIND: "true"
+  GO_VERSION: "1.14"
+
+stages:
+  - lint
+  - test
+  - package
+
+go:vet:
+  stage: lint
+  image: golang:${GO_VERSION}
+  allow_failure: false
+  cache:
+    paths:
+      - .cache
+  script:
+    - mkdir -p .cache
+    - export GOPATH="$CI_PROJECT_DIR/.cache"
+    - go vet ${GO_VET_OPTIONS} ./...
+
+markdown:lint:
+  stage: lint
+  image: pipelinecomponents/markdownlint
+  variables:
+    OPTIONS: "-r ~MD013"
+    MD_FILE: "README.md"
+  script:
+    - mdl $OPTIONS $MD_FILE
+
+go:outdated:
+  stage: lint
+  image: golang:${GO_VERSION}
+  stage: lint
+  before_script:
+    - go get -u github.com/psampaz/go-mod-outdated
+  script:
+    - go list -u -m -json all 2>/dev/null | go-mod-outdated -update
+    - go list -u -m -json all 2>/dev/null | go-mod-outdated -update -direct
+
+go:test:
+  stage: test
+  image: golang:${GO_VERSION}
+  cache:
+    paths:
+      - .cache
+  script:
+    - mkdir -p .cache
+    - export GOPATH="$CI_PROJECT_DIR/.cache"
+    - go test -timeout ${GO_TEST_TIMEOUT} -race -v ./...
+
+go:coverage:
+  stage: test
+  image: golang:${GO_VERSION}
+  cache:
+    paths:
+      - .cache
+  script:
+    - mkdir -p .cache
+    - export GOPATH="$CI_PROJECT_DIR/.cache"
+    - go test $(go list ./... | grep -v /vendor/) -v -coverprofile=coverage.out
+    - go tool cover -html=coverage.out -o coverage.html
+  coverage: '/coverage: \d+.\d+% of statements/'
+  artifacts:
+    paths:
+      - coverage.html
+      - coverage.out

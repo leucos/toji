@@ -38,10 +38,11 @@ var (
 // }
 
 func init() {
-	cobra.OnInitialize(initConfig, checkProfile)
+	cobra.OnInitialize(initConfig)
+	// cobra.OnInitialize(initConfig, checkProfile)
 
-	rootCmd.PersistentFlags().StringVar(&configFile, "config", guessConfig(), "configuration file")
-	rootCmd.PersistentFlags().StringVar(&currentProfile, "profile", "", "profile to use")
+	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", guessConfig(), "configuration file")
+	rootCmd.PersistentFlags().StringVarP(&currentProfile, "profile", "p", "", "profile to use")
 }
 
 // Run the CLI
@@ -78,7 +79,6 @@ func checkProfile() {
 		fmt.Fprintf(os.Stderr, "error: profile %s not found in %s\n", currentProfile, configFile)
 		os.Exit(1)
 	}
-
 }
 
 func guessConfig() string {
@@ -90,13 +90,12 @@ func guessConfig() string {
 }
 
 // getConfig returns the selected config in respect to the selected profile
+// If the value is not found in the requested profile, the value from the
+// default profile will be used.
 func getConfig(c string) string {
-	if currentProfile == "" {
-		return viper.GetString(c)
-	}
-
 	if viper.IsSet("profiles." + currentProfile) {
 		return viper.GetString("profiles." + currentProfile + "." + c)
 	}
-	return ""
+
+	return viper.GetString(c)
 }

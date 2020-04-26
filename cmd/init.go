@@ -36,20 +36,23 @@ func init() {
 
 func doInit() error {
 	var err error
-	if _, err = os.Stat(configFile); err == nil {
-		fmt.Fprintf(os.Stderr, "Config file %s already exists\n", configFile)
+	if _, err = os.Stat(configFile); err == nil && currentProfile == "" {
+		fmt.Fprintf(os.Stderr, "Config file %s already exists; refusing to overwrite default profile\n", configFile)
 		return nil
 	}
 
-	if !os.IsNotExist(err) {
-		return err
+	// Create path leading to config file if it does not exist
+	d := filepath.Dir(configFile)
+	if _, err = os.Stat(d); os.IsNotExist(err) {
+		err = os.MkdirAll(d, 0700)
+		if err != nil {
+			return err
+		}
 	}
 
-	d := filepath.Dir(configFile)
-
-	err = os.MkdirAll(d, 0700)
-	if err != nil {
-		return err
+	if currentProfile != "" && viper.InConfig("profiles."+currentProfile) {
+		fmt.Fprintf(os.Stderr, "Profile %s in config file %s already exists; refusing to overwrite\n", currentProfile, configFile)
+		return nil
 	}
 
 	// cfg := Configuration{}
@@ -79,10 +82,15 @@ func doInit() error {
 		return nil
 	}
 
-	viper.Set("toggle.token", strings.TrimSpace(togglToken))
-	viper.Set("jira.username", strings.TrimSpace(jiraUser))
-	viper.Set("jira.token", strings.TrimSpace(jiraToken))
-	viper.Set("jira.url", strings.TrimSpace(jiraURL))
+	prefix := ""
+	if currentProfile != "" {
+		prefix = "profiles." + currentProfile + "."
+	}
+
+	viper.Set(prefix+"toggle.token", strings.TrimSpace(togglToken))
+	viper.Set(prefix+"jira.username", strings.TrimSpace(jiraUser))
+	viper.Set(prefix+"jira.token", strings.TrimSpace(jiraToken))
+	viper.Set(prefix+"jira.url", strings.TrimSpace(jiraURL))
 
 	err = viper.WriteConfig()
 	if err != nil {

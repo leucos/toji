@@ -32,7 +32,7 @@ var (
 func init() {
 	syncCmd.Flags().StringVarP(&toDate, "to", "t", "", "ending date")
 	syncCmd.Flags().BoolVarP(&dryRun, "dryrun", "n", false, "do not update Jira entries")
-	syncCmd.Flags().StringSliceVarP(&onlyIssues, "only", "o", nil, "only update this entry")
+	syncCmd.Flags().StringSliceVarP(&onlyIssues, "only", "o", nil, "only update these comma-separated entries")
 	// syncCmd.Flags().BoolVar(&interactive, "interactive", false, "interactive confirmation mode")
 	// syncCmd.Flags().BoolVar(&message, "message", false, "asks additional message for every entry")
 	// edit command ? syncCmd.Flags().BoolVar(&amend, "amend", false, "amend existing entries")
@@ -44,6 +44,7 @@ func init() {
 	// syncCmd.Flags().BoolVar(&perfevent, "perfevent", false, "perfevent cgroup")
 	// syncCmd.Flags().BoolVar(&pids, "pids", false, "pids cgroup")
 	toggl.DisableLog()
+	checkProfile()
 }
 
 func doSync(fromDate string) error {
@@ -53,7 +54,7 @@ func doSync(fromDate string) error {
 
 	from, to, err := parseTimeSpec(fromDate, toDate)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to parse time using provided '%s' or '%s': %v", fromDate, toDate, err)
 	}
 
 	fmt.Printf("Syncing toggl entries between %s (%s) and %s (%s)\n", fromDate, from, toDate, to)
@@ -62,7 +63,7 @@ func doSync(fromDate string) error {
 	entries, err := session.GetTimeEntries(from, to)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to fetch Toggl entries: %v. Is your token valid ?", err)
 	}
 
 	currentDate := from.AddDate(-1, 0, 0).Format("Mon 2006/01/02")
@@ -115,6 +116,13 @@ func parseTimeSpec(s string, e string) (time.Time, time.Time, error) {
 		"friday":    time.Friday,
 		"saturday":  time.Saturday,
 		"sunday":    time.Sunday,
+		"mon":       time.Monday,
+		"tue":       time.Tuesday,
+		"wed":       time.Wednesday,
+		"thu":       time.Thursday,
+		"fri":       time.Friday,
+		"sat":       time.Saturday,
+		"sun":       time.Sunday,
 	}
 
 	switch s {

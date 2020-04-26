@@ -1,4 +1,4 @@
-module github.com/leucos/toji
+module gitlab.com/leucos/toji
 
 go 1.14
 
