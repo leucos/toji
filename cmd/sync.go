@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -26,23 +27,15 @@ var syncCmd = &cobra.Command{
 var (
 	toDate     string
 	dryRun     bool
+	anywhere   bool
 	onlyIssues []string
 )
 
 func init() {
 	syncCmd.Flags().StringVarP(&toDate, "to", "t", "", "ending date")
 	syncCmd.Flags().BoolVarP(&dryRun, "dryrun", "n", false, "do not update Jira entries")
+	syncCmd.Flags().BoolVarP(&anywhere, "anywhere", "a", false, "match Jira ticket anywhere in the Toggl comment (by default only the beginning is matched)")
 	syncCmd.Flags().StringSliceVarP(&onlyIssues, "only", "o", nil, "only update these comma-separated entries")
-	// syncCmd.Flags().BoolVar(&interactive, "interactive", false, "interactive confirmation mode")
-	// syncCmd.Flags().BoolVar(&message, "message", false, "asks additional message for every entry")
-	// edit command ? syncCmd.Flags().BoolVar(&amend, "amend", false, "amend existing entries")
-	// syncCmd.Flags().BoolVar(&devices, "devices", false, "devices cgroup")
-	// syncCmd.Flags().BoolVar(&freezer, "freezer", false, "freezer cgroup")
-	// syncCmd.Flags().BoolVar(&hugetlb, "hugetlb", false, "hugetlb cgroup")
-	// syncCmd.Flags().BoolVar(&memory, "memory", false, "memory cgroup")
-	// syncCmd.Flags().BoolVar(&net, "net", false, "net cgroup")
-	// syncCmd.Flags().BoolVar(&perfevent, "perfevent", false, "perfevent cgroup")
-	// syncCmd.Flags().BoolVar(&pids, "pids", false, "pids cgroup")
 	toggl.DisableLog()
 	checkProfile()
 }
@@ -195,8 +188,14 @@ func parseTimeSpec(s string, e string) (time.Time, time.Time, error) {
 }
 
 func getTicketFromEntry(e string) string {
-	re := regexp.MustCompile(`^[A-Z]+-\d+`)
-	project := re.Find([]byte(e))
+	exp := `^[A-Z]+-\d+\s`
+	if anywhere {
+		exp = `\s[A-Z]+-\d+\s`
+	}
+	re := regexp.MustCompile(exp)
+
+	project := string(re.Find([]byte(e)))
+	project = strings.TrimSpace(project)
 
 	return string(project)
 }

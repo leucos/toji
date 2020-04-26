@@ -41,6 +41,45 @@ You can then import your Toggl today's entries using:
 toji sync today
 ```
 
+Example dry-run
+
+```
+$ ./bin/toji sync thu -t fri -n
+
+Syncing toggl entries between 2020-04-23 00:00:00 +0200 CEST and 2020-04-24 23:59:59 +0200 CEST
+
+Thu 2020/04/23
+==============
+
+        DEV-399 Develop a Toggl->Jira bridge
+                [07:21 - 08:23] would insert 1h 2m 12s from entry 1125172937 to DEV-399's worklog entry
+                [08:53 - 10:10] would insert 1h 16m 43s from entry 1125305414 to DEV-399's worklog entry
+
+        DEV-419 Helm Charts elasticsearch
+                [10:10 - 10:43] would insert 0h 33m 22s from entry 1125410066 to DEV-419's worklog entry
+
+        DEV-399 Develop a Toggl->Jira bridge
+                [12:42 - 13:33] would insert 0h 51m 43s from entry 1125616608 to DEV-399's worklog entry
+
+        DEV-377 Meetings: Team meeting
+                [13:33 - 14:02] would insert 0h 28m 21s from entry 1125706034 to DEV-377's worklog entry
+
+        DEV-399 Develop a Toggl->Jira bridge
+                [14:02 - 15:46] would insert 1h 44m 8s from entry 1125756948 to DEV-399's worklog entry
+
+Fri 2020/04/24
+==============
+
+        DEV-399 Develop a Toggl->Jira bridge
+                [06:09 - 10:20] would insert 4h 11m 12s from entry 1524637903 to DEV-399's worklog entry
+
+        DEV-377 Meetings: Team meeting
+                [13:00 - 14:34] would insert 1h 33m 33s from entry 1525159511 to DEV-377's worklog entry
+
+        DEV-422 Keycloak provisionning via Terraform
+                worklog entry DEV-422 for 2h 24m already exists
+```
+
 See [detailed usage](#detailed-usage) for more information.
 
 ## Building
@@ -98,6 +137,10 @@ If you want completion loaded when your shell start, add the above line in your
 
 `init` will create or update your existing configuration.
 
+You will need your
+[Jira API token](https://id.atlassian.com/manage-profile/security) and your
+[Toggl API Token](https://toggl.com/app/profile).
+
 ```bash
 toji init
 ```
@@ -146,7 +189,8 @@ If a profile (of default) already exists, `toji` will refuse to overwrite it.
 
 Sync will fetch Toggl time entries in the requested period and add them to
 corresponding Jira issues. Toji will try to match the issue key in the
-beginning of the Toggl entry description.
+beginning of the Toggl entry description. If you set the `--anywhere` flag,
+Toji will look for a Jira issue anywhere in the Toggl comment.
 
 For instance, if a Toggl entry has the description `DEV-123 Create a toggl ->
 jira bridge`, Toji will match `DEV-123` as the issue key and try to update it's
@@ -159,7 +203,7 @@ Toggl time entry twice in an issue. In this respect, Toji is idempotent.
 The general command is:
 
 ```
-toji sync <start> [--to <end>] [--dryrun] [--only issue1,issue2]
+toji sync <start> [--to <end>] [--dryrun] [--only issue1,issue2] [--anywhere]
 ```
 
 where:
