@@ -84,7 +84,6 @@ func doSync(fromDate string) error {
 			currentProject = ""
 		}
 
-		// fmt.Printf("entry times: %s / %s\n", e.StartTime(), e.StopTime())
 		project := getTicketFromEntry(e.Description)
 
 		if project == "" {
@@ -94,7 +93,7 @@ func doSync(fromDate string) error {
 		// Only redisplay project description if the project is not the same as
 		// previous iteration
 		if project != currentProject {
-			fmt.Printf("\n  %s (%s/%s)\n", e.Description, getConfig("jira.url"), project)
+			fmt.Printf("\n  %s (%s/browse/%s)\n", e.Description, getConfig("jira.url"), project)
 			currentProject = project
 		}
 
