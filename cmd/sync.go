@@ -79,7 +79,7 @@ func doSync(fromDate string) error {
 	for _, e := range entries {
 		textDate := e.Start.Format("Mon 2006/01/02")
 		if textDate != currentDate {
-			fmt.Printf("\n%s\n==============\n\n", textDate)
+			fmt.Printf("\n%s\n==============\n", textDate)
 			currentDate = textDate
 			currentProject = ""
 		}
@@ -87,29 +87,30 @@ func doSync(fromDate string) error {
 		// fmt.Printf("entry times: %s / %s\n", e.StartTime(), e.StopTime())
 		project := getTicketFromEntry(e.Description)
 
-		if e.StopTime().IsZero() {
-			fmt.Printf("\t%s\n\t\tskipping currently running time entry %s\n", project, e.Description)
-			continue
-		}
 		if project == "" {
-			continue
-		}
-
-		if onlyIssues != nil && !isInSlice(project, onlyIssues) {
-			fmt.Printf("\t%s\n\t\tskipping time entry (not selected)\n", project)
 			continue
 		}
 
 		// Only redisplay project description if the project is not the same as
 		// previous iteration
 		if project != currentProject {
-			fmt.Printf("\t%s\n", e.Description)
+			fmt.Printf("\n  %s (%s/%s)\n", e.Description, getConfig("jira.url"), project)
 			currentProject = project
+		}
+
+		if e.StopTime().IsZero() {
+			fmt.Printf("    skipping currently running time entry %d\n", e.ID)
+			continue
+		}
+
+		if onlyIssues != nil && !isInSlice(project, onlyIssues) {
+			fmt.Printf("    skipping time entry (not selected)\n")
+			continue
 		}
 
 		err := updateJiraTracking(project, e)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "unable to sync with issue %s: %v ", project, err)
+			fmt.Fprintf(os.Stderr, "unable to sync with issue %s: %v", project, err)
 			continue
 		}
 	}
@@ -235,7 +236,7 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 		re := regexp.MustCompile(search)
 		matches := re.FindStringSubmatch(wlr.Comment)
 		if len(matches) > 0 {
-			fmt.Printf("\t\tworklog entry %s for Toggle entry %d (%s) already exists\n", issueID, togglEntry.ID, wlr.TimeSpent)
+			fmt.Printf("    worklog entry %s for Toggle entry %d (%s) already exists\n", issueID, togglEntry.ID, wlr.TimeSpent)
 			return nil
 		}
 	}
@@ -266,7 +267,7 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 	}
 
 	if dryRun {
-		fmt.Printf("\t\t[%s - %s] would insert %s from Toggl entry %d to %s's worklog entry\n",
+		fmt.Printf("    [%s - %s] would insert %s from Toggl entry %d to %s's worklog entry\n",
 			startText,
 			stopText,
 			durText,
@@ -288,11 +289,11 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 	}
 	_, _, err = jiraClient.Issue.AddWorklogRecord(issueID, wlr)
 	if err != nil {
-		fmt.Printf("\t\tunable to insert %s from Toggl entry %d to %s's worklog entry: %v", durText, togglEntry.ID, issueID, err)
+		fmt.Printf("    unable to insert %s from Toggl entry %d to %s's worklog entry: %v", durText, togglEntry.ID, issueID, err)
 		return err
 	}
 
-	fmt.Printf("\t\t[%s - %s] inserted %s from Toggl entry %d to %s's worklog entry\n",
+	fmt.Printf("    [%s - %s] inserted %s from Toggl entry %d to %s's worklog entry\n",
 		startText,
 		stopText,
 		durText,
