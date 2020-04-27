@@ -21,7 +21,7 @@ var validArgs = []string{
 }
 
 var syncCmd = &cobra.Command{
-	Use:     "sync",
+	Use:     "sync <start>",
 	Short:   "syncs time entries from toggl to jira",
 	Example: "toji sync yesterday --to today",
 	Args:    cobra.ExactArgs(1),
@@ -29,8 +29,8 @@ var syncCmd = &cobra.Command{
 
 		return doSync(args[0])
 	},
-	SilenceUsage: true,
-	ValidArgs:    validArgs,
+	// SilenceUsage: true,
+	ValidArgs: validArgs,
 }
 
 var (
@@ -231,10 +231,11 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 	}
 
 	for _, wlr := range wl.Worklogs {
-		re := regexp.MustCompile(`toggl_id: \d+`)
+		search := fmt.Sprintf("toggl_id: %d", togglEntry.ID)
+		re := regexp.MustCompile(search)
 		matches := re.FindStringSubmatch(wlr.Comment)
 		if len(matches) > 0 {
-			fmt.Printf("\t\tworklog entry %s for %s already exists\n", issueID, wlr.TimeSpent)
+			fmt.Printf("\t\tworklog entry %s for Toggle entry %d (%s) already exists\n", issueID, togglEntry.ID, wlr.TimeSpent)
 			return nil
 		}
 	}
@@ -265,7 +266,7 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 	}
 
 	if dryRun {
-		fmt.Printf("\t\t[%s - %s] would insert %s from entry %d to %s's worklog entry\n",
+		fmt.Printf("\t\t[%s - %s] would insert %s from Toggl entry %d to %s's worklog entry\n",
 			startText,
 			stopText,
 			durText,
@@ -287,11 +288,11 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 	}
 	_, _, err = jiraClient.Issue.AddWorklogRecord(issueID, wlr)
 	if err != nil {
-		fmt.Printf("\t\tunable to insert %s from entry %d to %s's worklog entry: %v", durText, togglEntry.ID, issueID, err)
+		fmt.Printf("\t\tunable to insert %s from Toggl entry %d to %s's worklog entry: %v", durText, togglEntry.ID, issueID, err)
 		return err
 	}
 
-	fmt.Printf("\t\t[%s - %s] inserted %s from entry %d to %s's worklog entry\n",
+	fmt.Printf("\t\t[%s - %s] inserted %s from Toggl entry %d to %s's worklog entry\n",
 		startText,
 		stopText,
 		durText,
