@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"regexp"
@@ -34,16 +35,18 @@ var syncCmd = &cobra.Command{
 }
 
 var (
-	toDate     string
-	dryRun     bool
-	utc        bool
-	onlyIssues []string
+	toDate      string
+	dryRun      bool
+	utc         bool
+	interactive bool
+	onlyIssues  []string
 )
 
 func init() {
 	syncCmd.Flags().StringVarP(&toDate, "to", "t", "", "ending date")
 	syncCmd.Flags().BoolVarP(&dryRun, "dryrun", "n", false, "do not update Jira entries")
-	syncCmd.Flags().BoolVarP(&utc, "utc", "u", false, "display entries using UTC in the termina")
+	syncCmd.Flags().BoolVarP(&utc, "utc", "u", false, "display entries using UTC in the terminal")
+	syncCmd.Flags().BoolVarP(&interactive, "interactive", "i", false, "asks a comment for each worklog interactively")
 	syncCmd.Flags().StringSliceVarP(&onlyIssues, "only", "o", nil, "only update these comma-separated entries")
 
 	syncCmd.RegisterFlagCompletionFunc("to", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -276,16 +279,43 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 		return nil
 	}
 
+	comment := ""
+	commentInIssue := false
+
+	if interactive {
+		reader := bufio.NewReader(os.Stdin)
+		prompt := fmt.Sprintf("    [%s - %s] (%s) %s comment -",
+			startText,
+			stopText,
+			durText,
+			issueID,
+		)
+		for {
+			fmt.Printf("%s> ", prompt)
+			line, _ := reader.ReadString('\n')
+			if line == "\n" {
+				break
+			}
+			comment += line
+			// prompt for next lines is made of spaces
+			prompt = strings.Repeat(" ", len(prompt))
+		}
+	}
+
+	if len(comment) > 0 && comment[0] == '*' {
+		commentInIssue = true
+		comment = strings.TrimSpace(comment[1:])
+	}
+
 	jTime := jira.Time(*togglEntry.Start)
-	// jUser, _, _ := jiraClient.User.GetSelf()
-	jComment := fmt.Sprintf("toggl_id: %d\n", togglEntry.ID)
+	jComment := fmt.Sprintf("toggl_id: %d\n%s", togglEntry.ID, comment)
 
 	wlr := &jira.WorklogRecord{
-		// Author:           jUser,
 		TimeSpentSeconds: int(togglEntry.Duration),
 		Created:          &jTime,
 		Comment:          jComment,
 	}
+
 	_, _, err = jiraClient.Issue.AddWorklogRecord(issueID, wlr)
 	if err != nil {
 		fmt.Printf("    unable to insert %s from Toggl entry %d to %s's worklog entry: %v", durText, togglEntry.ID, issueID, err)
@@ -299,6 +329,31 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 		togglEntry.ID,
 		issueID,
 	)
+
+	if commentInIssue {
+		issueComment := &jira.Comment{
+			Body: comment,
+		}
+		_, _, err = jiraClient.Issue.AddComment(issueID, issueComment)
+
+		if err != nil {
+			fmt.Printf("    unable to insert comment in issue %s: %v", issueID, err)
+			return err
+		}
+
+		// type Comment struct {
+		// 	ID           string            `json:"id,omitempty" structs:"id,omitempty"`
+		// 	Self         string            `json:"self,omitempty" structs:"self,omitempty"`
+		// 	Name         string            `json:"name,omitempty" structs:"name,omitempty"`
+		// 	Author       User              `json:"author,omitempty" structs:"author,omitempty"`
+		// 	Body         string            `json:"body,omitempty" structs:"body,omitempty"`
+		// 	UpdateAuthor User              `json:"updateAuthor,omitempty" structs:"updateAuthor,omitempty"`
+		// 	Updated      string            `json:"updated,omitempty" structs:"updated,omitempty"`
+		// 	Created      string            `json:"created,omitempty" structs:"created,omitempty"`
+		// 	Visibility   CommentVisibility `json:"visibility,omitempty" structs:"visibility,omitempty"`
+		// }
+
+	}
 
 	return nil
 }
