@@ -193,7 +193,7 @@ Sync will fetch Toggl time entries in the requested period and add them to
 corresponding Jira issues. Toji will try to match the issue key in the
 beginning of the Toggl entry description.
 
-For instance, if a Toggl entry has the description 
+For instance, if a Toggl entry has the description
 `DEV-123 Create a toggl -> jira bridge`, Toji will match `DEV-123` as the issue
  key and try to update it's time entries.
 
