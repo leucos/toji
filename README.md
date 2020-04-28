@@ -4,7 +4,9 @@
 [![pipeline status](https://gitlab.com/leucos/toji/badges/master/pipeline.svg)](https://gitlab.com/leucos/toji/-/commits/master)
 [![Go Report Card](https://goreportcard.com/badge/gitlab.com/leucos/toji)](https://goreportcard.com/report/gitlab.com/leucos/toji)
 
-Toji is a Toggle ➡ Jira bridge. Make time ~tracking fun again~ less painful.
+Toji is a Toggle ➡ Jira bridge. Make time tracking ~fun again~ less painful.
+
+The active project is on [Gitlab](https://gitlab.com/leucos/toji/).
 
 ## Objectives
 
