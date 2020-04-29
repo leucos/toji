@@ -28,7 +28,9 @@ You can also [build](#building) it yourself.
 
 ## Usage
 
-Get your Toggl and Jira API tokens handy, and create a configuration calling:
+Get your [Toggl API Token](https://toggl.com/app/profile) and
+[Atlassian API](https://id.atlassian.com/manage-profile/security) tokens handy,
+and create a configuration calling:
 
 ```bash
 toji init
