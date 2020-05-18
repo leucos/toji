@@ -168,6 +168,12 @@ func parseTimeSpec(s string, e string) (time.Time, time.Time, error) {
 			start = d
 			break
 		}
+		// If only YYYYmmDD is specified start at 00h00
+		// time.Truncate can't be used since it works only for UTC
+		if d, err := time.Parse("20060102", s); err == nil {
+			start = time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, time.Local)
+			break
+		}
 		return start, end, fmt.Errorf("unable to parse start date (%s)", end)
 	}
 
@@ -198,6 +204,12 @@ func parseTimeSpec(s string, e string) (time.Time, time.Time, error) {
 		}
 		if d, err := time.Parse("200601021504", e); err == nil {
 			end = d
+			break
+		}
+		// If only YYYYmmDD is specified start at 00h00
+		// time.Truncate can't be used since it works only for UTC
+		if d, err := time.Parse("20060102", e); err == nil {
+			end = time.Date(d.Year(), d.Month(), d.Day(), 23, 59, 0, 0, time.Local)
 			break
 		}
 		return start, end, fmt.Errorf("unable to parse end date (%s)", end)
