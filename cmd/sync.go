@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	jira "github.com/andygrunwald/go-jira"
+	ct "github.com/daviddengcn/go-colortext"
 	toggl "github.com/jason0x43/go-toggl"
 )
 
@@ -101,12 +102,16 @@ func doSync(fromDate string) error {
 		}
 
 		if e.StopTime().IsZero() {
+			ct.Foreground(ct.Cyan, true)
 			fmt.Printf("    skipping currently running time entry %d\n", e.ID)
+			ct.ResetColor()
 			continue
 		}
 
 		if onlyIssues != nil && !isInSlice(project, onlyIssues) {
+			ct.Foreground(ct.Red, false)
 			fmt.Printf("    skipping time entry (not selected)\n")
+			ct.ResetColor()
 			continue
 		}
 
@@ -250,7 +255,9 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 		re := regexp.MustCompile(search)
 		matches := re.FindStringSubmatch(wlr.Comment)
 		if len(matches) > 0 {
+			ct.Foreground(ct.Blue, false)
 			fmt.Printf("    worklog entry %s for Toggle entry %d (%s) already exists\n", issueID, togglEntry.ID, wlr.TimeSpent)
+			ct.ResetColor()
 			return nil
 		}
 	}
@@ -281,6 +288,7 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 	}
 
 	if dryRun {
+		ct.Foreground(ct.Yellow, false)
 		fmt.Printf("    [%s - %s] would insert %s from Toggl entry %d to %s's worklog entry\n",
 			startText,
 			stopText,
@@ -288,6 +296,8 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 			togglEntry.ID,
 			issueID,
 		)
+		ct.ResetColor()
+
 		return nil
 	}
 
@@ -334,6 +344,7 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 		return err
 	}
 
+	ct.Foreground(ct.Yellow, false)
 	fmt.Printf("    [%s - %s] inserted %s from Toggl entry %d to %s's worklog entry\n",
 		startText,
 		stopText,
@@ -341,6 +352,7 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 		togglEntry.ID,
 		issueID,
 	)
+	ct.ResetColor()
 
 	if commentInIssue {
 		issueComment := &jira.Comment{
