@@ -51,6 +51,12 @@ release: windows darwin linux ; $(info $(M) stripping release executable for Lin
 	$Q gzip $(BIN)/$(PACKAGE)-win-$(VERSION)
 	$Q $(BIN)/$(PACKAGE) version
 
+
+# don't even think about making a joke with this target name
+prepush: outdated
+	$Q $(GO) vet ./...
+	$Q docker run  -v $(pwd)/README.md:/tmp/README.md pipelinecomponents/markdownlint:latest mdl --style all -r ~MD034,~MD013 /tmp/README.md
+
 # Tools
 
 $(BIN):
@@ -75,6 +81,9 @@ $(BIN)/gocov-xml: REPOSITORY=github.com/AlekSi/gocov-xml
 
 GO2XUNIT = $(BIN)/go2xunit
 $(BIN)/go2xunit: REPOSITORY=github.com/tebeka/go2xunit
+
+GOMODOUTDATED = $(BIN)/go-mod-outdated
+$(BIN)/go-mod-outdated: REPOSITORY=github.com/psampaz/go-mod-outdated
 
 # Tests
 
@@ -118,6 +127,11 @@ test-coverage: fmt lint test-coverage-tools ; $(info $(M) running coverage tests
 .PHONY: lint
 lint: | $(GOLINT) ; $(info $(M) running golint…) @ ## Run golint
 	$Q $(GOLINT) -set_exit_status $(PKGS)
+
+.PHONY: outdated
+outdated: | $(GOMODOUTDATED) ; $(info $(M) running go-mod-outdated…) @ ## Run go-mod-outdated
+	$Q $(GO) list -u -m -json all 2>/dev/null | $(GOMODOUTDATED) -update
+	$Q $(GO) list -u -m -json all 2>/dev/null | $(GOMODOUTDATED) -update -direct
 
 .PHONY: fmt
 fmt: ; $(info $(M) running gofmt…) @ ## Run gofmt on all source files
