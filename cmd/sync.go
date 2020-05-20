@@ -88,8 +88,10 @@ func doSync(fromDate string) error {
 			currentProject = ""
 		}
 
+		// Project holds the Jira ticket ID (e.g. XYZ-123)
 		project := getTicketFromEntry(e.Description)
 
+		fmt.Printf("")
 		if project == "" {
 			continue
 		}
@@ -250,6 +252,8 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 		return err
 	}
 
+	// Search worklog for existing entries so we're idempotent
+	// Entries contain with `toggl_id: ID` to link to toggle entries
 	for _, wlr := range wl.Worklogs {
 		search := fmt.Sprintf("toggl_id: %d", togglEntry.ID)
 		re := regexp.MustCompile(search)
@@ -264,8 +268,10 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 
 	// Prepare human readable time representation
 	dur := time.Duration(time.Duration(togglEntry.Duration) * time.Second)
+	// and also a Jira-readable one
 	durText := fmt.Sprintf("%dh %dm %ds", int(dur.Hours()), int(dur.Minutes())%60, int(dur.Seconds())%60)
 
+	// Human readable duration requires checking days difference, etc...
 	refStart := togglEntry.StartTime().Local()
 	refStop := togglEntry.StopTime().Local()
 
@@ -279,13 +285,17 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 
 	// Get difference in days between start and stop
 	days := refStop.Sub(refStart).Hours() / 24
-	// Add 1 if task has been stopped after midnight
+	// Add 1 day if task has been stopped after midnight
 	if refStop.Hour() < refStart.Hour() {
 		days++
 	}
 	if days >= 1 {
 		stopText = fmt.Sprintf("%s j+%d", stopText, int(days))
 	}
+
+	comment := strings.ReplaceAll(togglEntry.Description, issueID, "")
+	comment = strings.Trim(comment, " ")
+	commentInIssue := false
 
 	if dryRun {
 		ct.Foreground(ct.Yellow, false)
@@ -296,13 +306,15 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 			togglEntry.ID,
 			issueID,
 		)
+		if interactive {
+			fmt.Println("                    asking message interactively")
+		} else {
+			fmt.Printf("                    using auto message: %s\n", comment)
+		}
 		ct.ResetColor()
 
 		return nil
 	}
-
-	comment := ""
-	commentInIssue := false
 
 	if interactive {
 		reader := bufio.NewReader(os.Stdin)

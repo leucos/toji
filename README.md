@@ -203,6 +203,10 @@ Time entries are added in the Jira worklog for the issue. Toji will insert a
 special value (`toggl_id`) in this field so it does not try to insert the same
 Toggl time entry twice in an issue. In this respect, Toji is idempotent.
 
+The message added to the worklog can be asked interactively when `-i` is used.
+If not, the Toggl entry description (minut the issue key) will automatically be
+used.
+
 The general command is:
 
 ```
@@ -235,11 +239,11 @@ Start and end times can be specified in a variety of ways.
 - `month`: this month
 - `year`: this year
 - `monday` (or any other day of the week): last monday
-- `YYYYMMDDHHMM`: absolute date
+- `YYYYMMDD[HHMM]`: absolute date
 
 If the end date (`--to`) is not specified, the same value as `start` will be
-used (e.g. `toji sync yesterday` is equivalent to
-`toji sync yesterday -to yesterday`)
+used (e.g. `toji sync yesterday` is equivalent to `toji sync yesterday -to
+yesterday`)
 
 This is quite obvious but has to be said: the `start` date must precede the
 `end` date. The end date, however, can be in the future (day of week are only
@@ -249,25 +253,25 @@ Note that the time range considered always starts at 00h00 for the start value,
 and 23h59 for the end value.
 
 When symbolic dates (e.g. `week`, `yesterday`, ...) are used, the generated
-date depends on context. the start date is 00:00 in the first day of the
+date depends on context. The start date is 00:00 in the first day of the
 period. if used in to, it will be the 23:59 in the last day of the period. if
 -to is omitted, the first value is implied (e.g. `toji sync yesterday` is
 equivalent to `toji sync yesterday -to yesterday`).
 
 Finally, weekdays have short form equivalents (`mon`, `tue`, `wed`, `thu`,
-`fri`, `sat`, `sun`) for convenience
+`fri`, `sat`, `sun`) for convenience.
 
 #### Comments
 
 When `--interactive` (or `-i` is used), Toji will ask for a comment on each new
-entry.
+entry, otherwise the Toggl description (minus `[ISSUE-ID]`) is used.
 
 If you do not wish to enter a comment, just press enter.
 
 Comments are multiline and an empty line will validate the comment.
 
 As a bonus, if you start your comment with `*`, this comment will also be added
-to the Jira issue comments (and the worklog of course).
+to the Jira issue comments (and the worklog as usual).
 
 #### Examples
 
@@ -312,10 +316,16 @@ toji sync tuesday --to thursday
 toji sync tue --to thu
 ```
 
-##### Sync all Toggl entries between last march 12th 2020 at noon and last tuesday at 23h59
+##### Sync all Toggl entries between march 12th 2020 at noon and last tuesday at 23h59
 
 ```
 toji sync 202004121200 --to tue
+```
+
+##### Sync all Toggl entries between june 2nd 2020 at june 21st 2020 (entire days)
+
+```
+toji sync 20200602 --to 20200621
 ```
 
 ## Caveats
