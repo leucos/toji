@@ -53,7 +53,7 @@ release: windows darwin linux ; $(info $(M) stripping release executable for Lin
 
 
 # don't even think about making a joke with this target name
-prepush: outdated
+prepush: outdated ; $(info $(M) execute CI linters…) @ ## execute linting tests so we should not fail liting in CI
 	$Q $(GO) vet ./...
 	$Q docker run  -v $(pwd)/README.md:/tmp/README.md pipelinecomponents/markdownlint:latest mdl --style all -r ~MD034,~MD013 /tmp/README.md
 
