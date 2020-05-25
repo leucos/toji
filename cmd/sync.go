@@ -309,6 +309,8 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) (bool, error
 
 	// Prepare human readable time representation
 	dur := time.Duration(time.Duration(togglEntry.Duration) * time.Second)
+	// Round to the minute above
+	dur = dur.Truncate(time.Minute) + time.Minute
 	// and also a Jira-readable one
 	durText := fmt.Sprintf("%dh %dm %ds", int(dur.Hours()), int(dur.Minutes())%60, int(dur.Seconds())%60)
 
