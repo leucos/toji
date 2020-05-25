@@ -137,7 +137,7 @@ func doSync(fromDate string) error {
 	fmt.Println()
 
 	if dryRun && alreadyExistEntries > 0 {
-		fmt.Printf("You can insert unsynced events faster with: %s\n", getSuggest(fromDate, firstChange))
+		fmt.Printf("You can insert the above unsynced events faster with: %s\n", getSuggest(fromDate, firstChange))
 	}
 	return nil
 }
