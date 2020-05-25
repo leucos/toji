@@ -80,6 +80,9 @@ func doSync(fromDate string) error {
 	currentDate := from.AddDate(-1, 0, 0).Format("Mon 2006/01/02")
 	currentProject := ""
 
+	firstChange := time.Now()
+	alreadyExistEntries := 0
+
 	for _, e := range entries {
 		textDate := e.Start.Format("Mon 2006/01/02")
 		if textDate != currentDate {
@@ -105,7 +108,7 @@ func doSync(fromDate string) error {
 
 		if e.StopTime().IsZero() {
 			ct.Foreground(ct.Cyan, true)
-			fmt.Printf("    skipping currently running time entry %d\n", e.ID)
+			fmt.Printf("    skipping currently running time entry for %s\n", project)
 			ct.ResetColor()
 			continue
 		}
@@ -117,14 +120,52 @@ func doSync(fromDate string) error {
 			continue
 		}
 
-		err := updateJiraTracking(project, e)
+		changed, err := updateJiraTracking(project, e)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to sync with issue %s: %v", project, err)
 			continue
 		}
+		// Keep track of fist change date
+		if changed && firstChange.After(*e.Start) {
+			firstChange = *e.Start
+		}
+		// Keep track of how many entries already exist
+		if !changed {
+			alreadyExistEntries++
+		}
 	}
 	fmt.Println()
+
+	if dryRun && alreadyExistEntries > 0 {
+		fmt.Printf("You can insert unsynced events faster with: %s\n", getSuggest(fromDate, firstChange))
+	}
 	return nil
+}
+
+func getSuggest(from string, firstChange time.Time) string {
+	suggest := []string{}
+	toSeen := false
+	for _, a := range os.Args {
+		if a == "-to" {
+			toSeen = true
+		}
+		if a == "-n" {
+			continue
+		}
+		if a == from {
+			suggest = append(suggest, firstChange.Format("200601021504"))
+			continue
+		}
+		suggest = append(suggest, a)
+	}
+
+	// If no "-to" was present in the original command
+	// explicitely set the end date to today
+	if !toSeen {
+		suggest = append(suggest, "--to", "today")
+	}
+
+	return strings.Join(suggest, " ")
 }
 
 func parseTimeSpec(s string, e string) (time.Time, time.Time, error) {
@@ -240,7 +281,7 @@ func getTicketFromEntry(e string) string {
 	return string(project)
 }
 
-func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
+func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) (bool, error) {
 	tp := jira.BasicAuthTransport{
 		Username: getConfig("jira.username"),
 		Password: getConfig("jira.token"),
@@ -249,7 +290,7 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 	wl, _, err := jiraClient.Issue.GetWorklogs(issueID)
 
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Search worklog for existing entries so we're idempotent
@@ -262,7 +303,7 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 			ct.Foreground(ct.Blue, false)
 			fmt.Printf("    worklog entry %s for Toggle entry %d (%s) already exists\n", issueID, togglEntry.ID, wlr.TimeSpent)
 			ct.ResetColor()
-			return nil
+			return false, nil
 		}
 	}
 
@@ -313,7 +354,7 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 		}
 		ct.ResetColor()
 
-		return nil
+		return true, nil
 	}
 
 	if interactive {
@@ -353,7 +394,7 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 	_, _, err = jiraClient.Issue.AddWorklogRecord(issueID, wlr)
 	if err != nil {
 		fmt.Printf("    unable to insert %s from Toggl entry %d to %s's worklog entry: %v", durText, togglEntry.ID, issueID, err)
-		return err
+		return false, err
 	}
 
 	ct.Foreground(ct.Yellow, false)
@@ -374,7 +415,7 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 
 		if err != nil {
 			fmt.Printf("    unable to insert comment in issue %s: %v", issueID, err)
-			return err
+			return false, err
 		}
 
 		// type Comment struct {
@@ -391,7 +432,7 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) error {
 
 	}
 
-	return nil
+	return true, nil
 }
 
 func isInSlice(entry string, sl []string) bool {
