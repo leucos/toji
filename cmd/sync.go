@@ -146,7 +146,7 @@ func getSuggest(from string, firstChange time.Time) string {
 	suggest := []string{}
 	toSeen := false
 	for _, a := range os.Args {
-		if a == "-to" {
+		if a == "-to" || a == "--to" {
 			toSeen = true
 		}
 		if a == "-n" {
@@ -271,7 +271,7 @@ func parseTimeSpec(s string, e string) (time.Time, time.Time, error) {
 }
 
 func getTicketFromEntry(e string) string {
-	exp := `[A-Z]+-\d+\s`
+	exp := `[A-Z]+-\d+`
 
 	re := regexp.MustCompile(exp)
 
@@ -309,10 +309,14 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) (bool, error
 
 	// Prepare human readable time representation
 	dur := time.Duration(time.Duration(togglEntry.Duration) * time.Second)
-	// Round to the minute above
-	dur = dur.Truncate(time.Minute) + time.Minute
+	// Round entry to the minute above
+	// We do not use Truncate since it does not work for Local times
+	if time.Duration(togglEntry.Duration)%60 != 0 {
+		dur += (60 - time.Duration(togglEntry.Duration)%60) * time.Second
+	}
+
 	// and also a Jira-readable one
-	durText := fmt.Sprintf("%dh %dm %ds", int(dur.Hours()), int(dur.Minutes())%60, int(dur.Seconds())%60)
+	durText := fmt.Sprintf("%dh %dm", int(dur.Hours()), int(dur.Minutes())%60)
 
 	// Human readable duration requires checking days difference, etc...
 	refStart := togglEntry.StartTime().Local()
