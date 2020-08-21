@@ -1,12 +1,12 @@
 # Toji
 
 [![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)](http://www.wtfpl.net/about/)
-[![pipeline status](https://gitlab.com/leucos/toji/badges/master/pipeline.svg)](https://gitlab.com/leucos/toji/-/commits/master)
-[![Go Report Card](https://goreportcard.com/badge/gitlab.com/leucos/toji)](https://goreportcard.com/report/gitlab.com/leucos/toji)
+![Pipeline status](https://github.com/leucos/toji/workflows/Build%20and%20test/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/leucos/toji)](https://goreportcard.com/report/github.com/leucos/toji)
 
 Toji is a Toggle ➡ Jira bridge. Make time tracking ~fun again~ less painful.
 
-The active project is on [Gitlab](https://gitlab.com/leucos/toji/).
+The active project is on [Github](https://github.com/leucos/toji/).
 
 ## Objectives
 
@@ -21,7 +21,7 @@ using Toji.
 
 ## Install
 
-Go to [releases pages](https://gitlab.com/leucos/toji/-/releases), download the
+Go to [releases pages](https://github.com/leucos/toji/releases), download the
 binary for your architecture.
 
 You can also [build](#building) it yourself.
