@@ -152,3 +152,9 @@ help:
 .PHONY: version
 version:
 	@echo $(VERSION)
+
+goreleaser-test: fmt lint clean ; $(info $(M) goreleaser dry-run…) @ ## Build program binary
+	goreleaser --snapshot --skip-publish --rm-dist
+
+goreleaser: fmt lint clean test; $(info $(M) create a release with goreleaser…) @ ## Build program binary
+	goreleaser --rm-dist
