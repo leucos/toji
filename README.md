@@ -24,7 +24,7 @@ using Toji.
 Go to [releases pages](https://github.com/leucos/toji/releases), download the
 binary for your architecture.
 
-You can also [build](#building) it yourself.
+You can also [build](#building) it yourself or install it with [binenv](https://github.com/devops-works/binenv).
 
 ## Usage
 
