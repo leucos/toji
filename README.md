@@ -48,7 +48,7 @@ toji sync today
 Example dry-run
 
 ```
-$ ./bin/toji sync thu -t fri -n
+$ toji sync thu -t fri -n
 
 Syncing toggl entries between 2020-04-23 00:00:00 +0200 CEST and 2020-04-24 23:59:59 +0200 CEST
 
