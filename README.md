@@ -204,7 +204,7 @@ special value (`toggl_id`) in this field so it does not try to insert the same
 Toggl time entry twice in an issue. In this respect, Toji is idempotent.
 
 The message added to the worklog can be asked interactively when `-i` is used.
-If not, the Toggl entry description (minut the issue key) will automatically be
+If not, the Toggl entry description (minus the issue key) will automatically be
 used.
 
 The general command is:
@@ -217,18 +217,18 @@ where:
 
 - `start` and `end` are respectively the starting and ending date for the sync
   operation (more on this below)
-- `--dryrun` show which entris would be added in Jira issues (alias: `-n`)
+- `--dryrun` show which entries would be added in Jira issues (alias: `-n`)
 - `--only` is the list of the only Jira issues we want to update (alias: `-o`)
-- `--interactive` will make Toji ask for a single line comment for enach added
+- `--interactive` will make Toji ask for a single line comment for each added
   entry; this comment will be added to the worklog (alias: `-i`)
 
-When specifiying `--only`, you can supply a comma-separated list of issue, or
+When specifiying `--only`, you can supply a comma-separated list of issues, or
 repeat the option several times (or both).
 
 For instance, the command `toji sync today -o DEV-22,DEV-45 -o DEV-55` will
 only update time tracking entries in issues DEV-22, DEV-45 and DEV-55.
 
-The `--interactive` flag will ask for a comment fort each new entry.
+The `--interactive` flag will ask for a comment for each new entry.
 See [comments](#comments) for description.
 
 Start and end times can be specified in a variety of ways.
@@ -254,8 +254,8 @@ and 23h59 for the end value.
 
 When symbolic dates (e.g. `week`, `yesterday`, ...) are used, the generated
 date depends on context. The start date is 00:00 in the first day of the
-period. if used in to, it will be the 23:59 in the last day of the period. if
--to is omitted, the first value is implied (e.g. `toji sync yesterday` is
+period. If used in `-to`, it will be the 23:59 in the last day of the period. if
+`-to` is omitted, the first value is implied (e.g. `toji sync yesterday` is
 equivalent to `toji sync yesterday -to yesterday`).
 
 Finally, weekdays have short form equivalents (`mon`, `tue`, `wed`, `thu`,
@@ -289,13 +289,13 @@ toji sync yesterday -n -i
 
 Also asks a comment interactively for each added entry.
 
-##### Sync all Toggl entries found for issues DEV-55 and DEV-69 between yesterday at 00h00 and yesterday at 23h59
+##### Sync all Toggl entries for issues DEV-55 and DEV-69 found yesterday (between 00h00 and 23h59)
 
 ```bash
 toji sync yesterday -o DEV-55,DEV-69
 ```
 
-##### Sync all Toggl entries between monday 00h00 of the current week and sunday 23h59 of the current week
+##### Sync all Toggl entries of this week (between monday 00h00 of the current week and sunday 23h59 of the current week)
 
 ```bash
 toji sync week
@@ -330,7 +330,7 @@ toji sync 20200602 --to 20200621
 
 ## Caveats
 
-Toji is in GoodEnough™ (i.e. "works on my machine") state.
+Toji is in GoodEnough™ state.
 
 Use at your own risks (a.k.a. "no tests").
 
