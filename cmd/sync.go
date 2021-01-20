@@ -391,6 +391,10 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) (bool, error
 	jTime := jira.Time(*togglEntry.Start)
 	jComment := fmt.Sprintf("toggl_id: %d\n%s", togglEntry.ID, comment)
 
+	// Ensure we have at leat 60 seconds or Jira will complain
+	if togglEntry.Duration < 60 {
+		togglEntry.Duration = 60
+	}
 	wlr := &jira.WorklogRecord{
 		TimeSpentSeconds: int(togglEntry.Duration),
 		Created:          &jTime,
