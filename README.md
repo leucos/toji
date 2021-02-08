@@ -3,7 +3,7 @@
 [![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)](http://www.wtfpl.net/about/)
 ![Pipeline status](https://github.com/leucos/toji/workflows/Build%20and%20test/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/leucos/toji)](https://goreportcard.com/report/github.com/leucos/toji)
-[![Install with binenv](https://img.shields.io/badge/binenv-binenv%20install%20foo-brightgreen)](https://github.com/devops-works/binenv)
+[![Install with binenv](https://img.shields.io/badge/binenv-binenv%20install%20toji-brightgreen)](https://github.com/devops-works/binenv)
 
 Toji is a Toggle ➡ Jira bridge. Make time tracking ~fun again~ less painful.
 
