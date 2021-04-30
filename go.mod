@@ -3,7 +3,7 @@ module gitlab.com/leucos/toji
 go 1.14
 
 require (
-	github.com/andygrunwald/go-jira v1.12.0
+	github.com/andygrunwald/go-jira v1.13.0
 	github.com/daviddengcn/go-colortext v1.0.0
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect

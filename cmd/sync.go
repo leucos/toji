@@ -68,6 +68,12 @@ func doSync(fromDate string) error {
 		return fmt.Errorf("unable to parse time using provided '%s' or '%s': %v", fromDate, toDate, err)
 	}
 
+	projectList := []string{}
+	// if we have filters, prepare a string slice
+	if getConfig("jira.projects") != "" {
+		projectList = strings.Split(getConfig("jira.projects"), ",")
+	}
+
 	fmt.Printf("\nSyncing toggl entries between %s and %s\n", from, to)
 
 	session := toggl.OpenSession(getConfig("toggle.token"))
@@ -97,6 +103,17 @@ func doSync(fromDate string) error {
 		fmt.Printf("")
 		if project == "" {
 			continue
+		}
+
+		// if we have project filters, check if we have a match
+		if len(projectList) > 0 {
+			projectSlug := strings.Split(project, "-")
+			if !isInSlice(projectSlug[0], projectList) {
+				ct.Foreground(ct.Cyan, true)
+				fmt.Printf("    skipping since project not included for entry %s\n", project)
+				ct.ResetColor()
+				continue
+			}
 		}
 
 		// Only redisplay project description if the project is not the same as
@@ -389,6 +406,7 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) (bool, error
 	}
 
 	jTime := jira.Time(*togglEntry.Start)
+	jsTime := jira.Time(*togglEntry.Start)
 	jComment := fmt.Sprintf("toggl_id: %d\n%s", togglEntry.ID, comment)
 
 	// Ensure we have at leat 60 seconds or Jira will complain
@@ -398,6 +416,7 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) (bool, error
 	wlr := &jira.WorklogRecord{
 		TimeSpentSeconds: int(togglEntry.Duration),
 		Created:          &jTime,
+		Started:          &jsTime,
 		Comment:          jComment,
 	}
 

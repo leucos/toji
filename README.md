@@ -190,6 +190,20 @@ toji init -p anothercorp
 
 If a profile (of default) already exists, `toji` will refuse to overwrite it.
 
+You can restrict prokect names to profiles using the `jira.projects` key, and
+using comma-separated projects slugs:
+
+```
+    ...
+    jira:
+      token: egfh5678
+      url: http://anothercorp.atlassian.net
+      username: me@anothercorp.com
+      projects: FOO,BAR,BAZ
+```
+
+The above config will match `FOO-*` and `BAR-*` Jira issues.
+
 ### Sync
 
 Sync will fetch Toggl time entries in the requested period and add them to
