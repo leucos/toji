@@ -28,7 +28,9 @@ var syncCmd = &cobra.Command{
 	Example: "toji sync yesterday --to today",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-
+		if rollup {
+			return doRollup(args[0])
+		}
 		return doSync(args[0])
 	},
 	// SilenceUsage: true,
@@ -40,6 +42,8 @@ var (
 	dryRun      bool
 	utc         bool
 	interactive bool
+	rollup      bool
+	rounding    int
 	onlyIssues  []string
 )
 
@@ -48,6 +52,8 @@ func init() {
 	syncCmd.Flags().BoolVarP(&dryRun, "dryrun", "n", false, "do not update Jira entries")
 	syncCmd.Flags().BoolVarP(&utc, "utc", "u", false, "display entries using UTC in the terminal")
 	syncCmd.Flags().BoolVarP(&interactive, "interactive", "i", false, "asks a comment for each worklog interactively")
+	syncCmd.Flags().BoolVarP(&rollup, "rollup", "R", false, "summarize times daily per ticket")
+	syncCmd.Flags().IntVarP(&rounding, "rounding", "r", 0, "round rollup times to this value")
 	syncCmd.Flags().StringSliceVarP(&onlyIssues, "only", "o", nil, "only update these comma-separated entries")
 
 	syncCmd.RegisterFlagCompletionFunc("to", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -56,6 +62,145 @@ func init() {
 
 	toggl.DisableLog()
 	checkProfile()
+}
+
+func doRollup(fromDate string) error {
+	if toDate == "" {
+		toDate = fromDate
+	}
+
+	from, to, err := parseTimeSpec(fromDate, toDate)
+	if err != nil {
+		return fmt.Errorf("unable to parse time using provided '%s' or '%s': %v", fromDate, toDate, err)
+	}
+
+	// If to is today, substract 24h
+	// since we do not want to make rollups for an unfinished day
+	fmt.Println("to", to)
+
+	todayStart := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Local)
+	fmt.Println("todayStart", todayStart)
+	if to.After(todayStart) {
+		to = todayStart.Add(-1 * time.Second)
+		fmt.Println("to", to)
+	}
+
+	projectList := []string{}
+	// if we have filters, prepare a string slice
+	if getConfig("jira.projects") != "" {
+		projectList = strings.Split(getConfig("jira.projects"), ",")
+	}
+
+	fmt.Printf("\nRolling up toggl entries between %s and %s\n", from, to)
+
+	session := toggl.OpenSession(getConfig("toggle.token"))
+	entries, err := session.GetTimeEntries(from, to)
+
+	if err != nil {
+		return fmt.Errorf("unable to fetch Toggl entries: %v. Is your token valid ?", err)
+	}
+
+	currentDate := from.AddDate(-1, 0, 0).Format("Mon 2006/01/02")
+	// currentProject := ""
+
+	// firstChange := time.Now()
+	// alreadyExistEntries := 0
+
+	// first key is date "Mon 2006/01/02"
+	// second key is issue ID and description
+	// value is the cumulated seconds for the issue
+	dailyRollups := map[string]map[string]int64{}
+
+	for _, e := range entries {
+		textDate := e.Start.Format("Mon 2006/01/02")
+		if textDate != currentDate {
+			fmt.Printf("\n%s\n==============\n", textDate)
+			currentDate = textDate
+			// currentProject = ""
+			// fmt.Printf("creating entry for %s\n", textDate)
+			dailyRollups[textDate] = make(map[string]int64)
+			currentDate = textDate
+		}
+
+		// Project holds the Jira ticket ID (e.g. XYZ-123)
+		project := getTicketFromEntry(e.Description)
+
+		fmt.Printf("")
+		if project == "" {
+			continue
+		}
+
+		// if we have project filters, check if we have a match
+		if len(projectList) > 0 {
+			projectSlug := strings.Split(project, "-")
+			if !isInSlice(projectSlug[0], projectList) {
+				ct.Foreground(ct.Cyan, true)
+				fmt.Printf("    skipping since project not included for entry %s\n", project)
+				ct.ResetColor()
+				continue
+			}
+		}
+
+		// Only redisplay project description if the project is not the same as
+		// previous iteration
+		// if project != currentProject {
+		// 	fmt.Printf("\n  %s (%s/browse/%s)\n", e.Description, getConfig("jira.url"), project)
+		// 	currentProject = project
+		// }
+
+		if e.StopTime().IsZero() {
+			ct.Foreground(ct.Cyan, true)
+			fmt.Printf("    skipping currently running time entry for %s\n", project)
+			ct.ResetColor()
+			continue
+		}
+
+		if onlyIssues != nil && !isInSlice(project, onlyIssues) {
+			ct.Foreground(ct.Red, false)
+			fmt.Printf("    skipping time entry (not selected)\n")
+			ct.ResetColor()
+			continue
+		}
+
+		// fmt.Printf("\tadding duration %d to project %s\n", e.Duration, project)
+		dailyRollups[textDate][e.Description] += e.Duration
+	}
+	fmt.Println()
+
+	// adjust rounding if needed
+	if rounding != 0 {
+		for day, pmap := range dailyRollups {
+			for issue, dur := range pmap {
+				// *60 is needed since rounding is expressed as minutes
+				dailyRollups[day][issue] += int64(rounding*60) - dur%int64(rounding*60)
+			}
+		}
+	}
+
+	fmt.Printf("Rollup mode\n==============\n\n")
+	// for day, pmap := range dailyRollups {
+	// 	fmt.Printf("%s\n--------------\n", day)
+	// 	for issue, dur := range pmap {
+	// 		fmt.Printf("\t%s: %v\n", issue, time.Duration(dur*int64(time.Second)))
+	// 	}
+	// 	fmt.Println()
+	// }
+
+	for day, pmap := range dailyRollups {
+		fmt.Printf("%s\n--------------\n", day)
+		for fulldesc, dur := range pmap {
+			issue := getTicketFromEntry(fulldesc)
+			description := strings.ReplaceAll(fulldesc, issue+" ", "")
+			_, err := updateJiraRollup(day, issue, description, dur)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "unable to sync with issue %s: %v", issue, err)
+				continue
+			}
+		}
+		fmt.Println()
+	}
+
+	return nil
 }
 
 func doSync(fromDate string) error {
@@ -460,6 +605,101 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) (bool, error
 		// }
 
 	}
+
+	return true, nil
+}
+
+// changed, err := updateJiraRollup(day, issue, dur)
+func updateJiraRollup(day, issueID, description string, seconds int64) (bool, error) {
+	tp := jira.BasicAuthTransport{
+		Username: getConfig("jira.username"),
+		Password: getConfig("jira.token"),
+	}
+	jiraClient, _ := jira.NewClient(tp.Client(), getConfig("jira.url"))
+	wl, _, err := jiraClient.Issue.GetWorklogs(issueID)
+
+	if err != nil {
+		return false, err
+	}
+
+	dur := time.Duration(seconds * int64(time.Second))
+	// Search worklog for existing entries so we're idempotent
+	// Entries contain with `toggl_id: ID` to link to toggle entries
+	ref := strings.ReplaceAll(day, "/", "-")
+	for _, wlr := range wl.Worklogs {
+		search := fmt.Sprintf("rollup: %s", ref)
+		re := regexp.MustCompile(search)
+		matches := re.FindStringSubmatch(wlr.Comment)
+		if len(matches) > 0 {
+			ct.Foreground(ct.Blue, false)
+			fmt.Printf("    rollup entry %s for issue %s already exists\n", ref, issueID)
+			ct.ResetColor()
+			return false, nil
+		}
+	}
+
+	// Prepare Jira-readable time duration
+	durText := fmt.Sprintf("%dh %dm", int(dur.Hours()), int(dur.Minutes())%60)
+
+	if dryRun {
+		ct.Foreground(ct.Yellow, false)
+		fmt.Printf("    [%s] would insert %s from rollup to %s's worklog entry with text %q\n",
+			day,
+			durText,
+			issueID,
+			description,
+		)
+		if interactive {
+			fmt.Println("                    asking confirmation interactively")
+		}
+		ct.ResetColor()
+
+		return true, nil
+	}
+
+	if interactive {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Printf("    insert woklog entry for %s %q (%s) [y/n] ? ",
+			issueID,
+			description,
+			durText,
+		)
+		line, _ := reader.ReadString('\n')
+		line = strings.TrimSpace(line)
+		if line != "y" {
+			return true, nil
+		}
+	}
+
+	startTime, err := time.Parse("Mon 2006/01/02", day)
+	if err != nil {
+		return false, err
+	}
+	jTime := jira.Time(startTime)
+	jsTime := jira.Time(startTime)
+	jComment := fmt.Sprintf("%s (rollup: %s)", description, ref)
+
+	wlr := &jira.WorklogRecord{
+		TimeSpentSeconds: int(dur / time.Second),
+		Created:          &jTime,
+		Started:          &jsTime,
+		Comment:          jComment,
+	}
+
+	fmt.Printf("%+v\n", wlr)
+	_, _, err = jiraClient.Issue.AddWorklogRecord(issueID, wlr)
+	if err != nil {
+		fmt.Printf("    unable to insert %s from rollup entry %s to %s's worklog entry: %v", durText, ref, issueID, err)
+		return false, err
+	}
+
+	ct.Foreground(ct.Yellow, false)
+	fmt.Printf("    [%s] inserted %s from rollup entry to %s's worklog entry\n",
+		ref,
+		durText,
+		issueID,
+	)
+	ct.ResetColor()
 
 	return true, nil
 }
