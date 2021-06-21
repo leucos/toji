@@ -288,6 +288,35 @@ Comments are multiline and an empty line will validate the comment.
 As a bonus, if you start your comment with `*`, this comment will also be added
 to the Jira issue comments (and the worklog as usual).
 
+#### Rollup mode
+
+When using rollup (`--rollup`) mode, `toji` will create daily time entries
+aggregates by description. In this mode, time in entries with indentical
+descriptions will be aggregated on a daily basis.
+
+For instance, if you have the following entries in a day:
+
+- `FOO-123 Fix issue in reporting` (15m05s)
+- `FOO-124 Call with client` (26m12s)
+- `FOO-123 Fix issue in reporting` (12m27s)
+- `FOO-124 Project management` (7m50s)
+
+`toji` will create the following worklog entries in Jira:
+
+- `FOO-123 Fix issue in reporting`: worklog entry with 27m32s
+- `FOO-124 Call with client`: worklog entry with 26m12s
+- `FOO-124 Project management`: worklog entry with 7m50s
+
+This mode also supports rounding. When rounding (`--rounding`) is used, entries
+will be rounded up at the next step. For instance, is 15 minutes rounding is
+used, the workload will be filled with those entries:
+
+- `FOO-123 Fix issue in reporting`: worklog entry with 30m
+- `FOO-124 Call with client`: worklog entry with 30m
+- `FOO-124 Project management`: worklog entry with 15m
+
+> :warning: **do not mix rollup/non rollup modes for the same time period !**
+
 #### Examples
 
 ##### Sync all Toggl entries between yesterday at 00h00 and yesterday at 23h59

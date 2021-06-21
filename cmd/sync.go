@@ -53,7 +53,7 @@ func init() {
 	syncCmd.Flags().BoolVarP(&utc, "utc", "u", false, "display entries using UTC in the terminal")
 	syncCmd.Flags().BoolVarP(&interactive, "interactive", "i", false, "asks a comment for each worklog interactively")
 	syncCmd.Flags().BoolVarP(&rollup, "rollup", "R", false, "summarize times daily per ticket")
-	syncCmd.Flags().IntVarP(&rounding, "rounding", "r", 0, "round rollup times to this value")
+	syncCmd.Flags().IntVarP(&rounding, "rounding", "r", 0, "round rollup times to this value (in minutes)")
 	syncCmd.Flags().StringSliceVarP(&onlyIssues, "only", "o", nil, "only update these comma-separated entries")
 
 	syncCmd.RegisterFlagCompletionFunc("to", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
