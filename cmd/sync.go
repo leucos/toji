@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -112,7 +113,7 @@ func doRollup(fromDate string) error {
 	dailyRollups := map[string]map[string]int64{}
 
 	for _, e := range entries {
-		textDate := e.Start.Format("Mon 2006/01/02")
+		textDate := e.Start.Format("2006/01/02 Mon")
 		if textDate != currentDate {
 			fmt.Printf("\n%s\n==============\n", textDate)
 			currentDate = textDate
@@ -186,12 +187,18 @@ func doRollup(fromDate string) error {
 	// 	fmt.Println()
 	// }
 
-	for day, pmap := range dailyRollups {
-		fmt.Printf("%s\n--------------\n", day)
-		for fulldesc, dur := range pmap {
+	var keys []string
+	for key := range dailyRollups {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		fmt.Printf("%s\n--------------\n", k)
+		for fulldesc, dur := range dailyRollups[k] {
 			issue := getTicketFromEntry(fulldesc)
 			description := strings.ReplaceAll(fulldesc, issue+" ", "")
-			_, err := updateJiraRollup(day, issue, description, dur)
+			_, err := updateJiraRollup(k, issue, description, dur)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "unable to sync with issue %s: %v", issue, err)
 				continue
@@ -627,7 +634,7 @@ func updateJiraRollup(day, issueID, description string, seconds int64) (bool, er
 	// Entries contain with `toggl_id: ID` to link to toggle entries
 	ref := strings.ReplaceAll(day, "/", "-")
 	for _, wlr := range wl.Worklogs {
-		search := fmt.Sprintf("rollup: %s", ref)
+		search := fmt.Sprintf("rollup: %s/%s", tp.Username, ref)
 		re := regexp.MustCompile(search)
 		matches := re.FindStringSubmatch(wlr.Comment)
 		if len(matches) > 0 {
@@ -671,13 +678,13 @@ func updateJiraRollup(day, issueID, description string, seconds int64) (bool, er
 		}
 	}
 
-	startTime, err := time.Parse("Mon 2006/01/02", day)
+	startTime, err := time.Parse("2006/01/02 Mon", day)
 	if err != nil {
 		return false, err
 	}
 	jTime := jira.Time(startTime)
 	jsTime := jira.Time(startTime)
-	jComment := fmt.Sprintf("%s (rollup: %s)", description, ref)
+	jComment := fmt.Sprintf("%s (rollup: %s/%s)", description, tp.Username, ref)
 
 	wlr := &jira.WorklogRecord{
 		TimeSpentSeconds: int(dur / time.Second),
