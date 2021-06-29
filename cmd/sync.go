@@ -686,7 +686,6 @@ func updateJiraRollup(day, issueID, description string, seconds int64) (bool, er
 		Comment:          jComment,
 	}
 
-	fmt.Printf("%+v\n", wlr)
 	_, _, err = jiraClient.Issue.AddWorklogRecord(issueID, wlr)
 	if err != nil {
 		fmt.Printf("    unable to insert %s from rollup entry %s to %s's worklog entry: %v", durText, ref, issueID, err)
