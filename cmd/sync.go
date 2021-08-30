@@ -171,7 +171,8 @@ func doRollup(fromDate string) error {
 		// fmt.Printf("\tadding duration %d to project %s\n", e.Duration, project)
 		explodedIssue := strings.Split(e.Description, " ")
 		if dailyRollups[textDate][explodedIssue[0]] == nil {
-			dailyRollups[textDate][explodedIssue[0]] = &singleRollup{duration: e.Duration, description: explodedIssue[1]}
+			dailyRollups[textDate][explodedIssue[0]] = &singleRollup{duration: e.Duration, description: strings.Join(explodedIssue[1:], " ")}
+			// fmt.Printf("setting description to %s from %s\n", explodedIssue[1:], e.Description)
 		} else {
 			dailyRollups[textDate][explodedIssue[0]].duration += e.Duration
 		}
@@ -183,7 +184,7 @@ func doRollup(fromDate string) error {
 		for day, pmap := range dailyRollups {
 			for issue, srp := range pmap {
 				// *60 is needed since rounding is expressed as minutes
-				fmt.Printf("day: %s issue: %s\n", day, issue)
+				// fmt.Printf("day: %s issue: %s\n", day, issue)
 				dailyRollups[day][issue].duration += int64(rounding*60) - srp.duration%int64(rounding*60)
 			}
 		}
@@ -207,7 +208,7 @@ func doRollup(fromDate string) error {
 	for _, k := range keys {
 		fmt.Printf("%s\n--------------\n", k)
 		for issueID, srp := range dailyRollups[k] {
-			fmt.Printf("k: %s, issue: %s, description: %s, dur %d\n", k, issueID, srp.description, srp.duration)
+			// fmt.Printf("k: %s, issue: %s, description: %s, dur %d\n", k, issueID, srp.description, srp.duration)
 			_, err := updateJiraRollup(k, issueID, srp.description, srp.duration)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "unable to sync with issue %s: %v", issueID, err)
