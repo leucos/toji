@@ -108,9 +108,14 @@ func doRollup(fromDate string) error {
 	// alreadyExistEntries := 0
 
 	// first key is date "Mon 2006/01/02"
-	// second key is issue ID and description
-	// value is the cumulated seconds for the issue
-	dailyRollups := map[string]map[string]int64{}
+	// second key is issue ID
+	// value is a struct containing the cumulated seconds for the
+	// issue and a description
+	type singleRollup struct {
+		duration    int64
+		description string
+	}
+	dailyRollups := map[string]map[string]*singleRollup{}
 
 	for _, e := range entries {
 		textDate := e.Start.Format("2006/01/02 Mon")
@@ -119,7 +124,7 @@ func doRollup(fromDate string) error {
 			currentDate = textDate
 			// currentProject = ""
 			// fmt.Printf("creating entry for %s\n", textDate)
-			dailyRollups[textDate] = make(map[string]int64)
+			dailyRollups[textDate] = make(map[string]*singleRollup)
 			currentDate = textDate
 		}
 
@@ -164,16 +169,22 @@ func doRollup(fromDate string) error {
 		}
 
 		// fmt.Printf("\tadding duration %d to project %s\n", e.Duration, project)
-		dailyRollups[textDate][e.Description] += e.Duration
+		explodedIssue := strings.Split(e.Description, " ")
+		if dailyRollups[textDate][explodedIssue[0]] == nil {
+			dailyRollups[textDate][explodedIssue[0]] = &singleRollup{duration: e.Duration, description: explodedIssue[1]}
+		} else {
+			dailyRollups[textDate][explodedIssue[0]].duration += e.Duration
+		}
 	}
 	fmt.Println()
 
 	// adjust rounding if needed
 	if rounding != 0 {
 		for day, pmap := range dailyRollups {
-			for issue, dur := range pmap {
+			for issue, srp := range pmap {
 				// *60 is needed since rounding is expressed as minutes
-				dailyRollups[day][issue] += int64(rounding*60) - dur%int64(rounding*60)
+				fmt.Printf("day: %s issue: %s\n", day, issue)
+				dailyRollups[day][issue].duration += int64(rounding*60) - srp.duration%int64(rounding*60)
 			}
 		}
 	}
@@ -195,12 +206,11 @@ func doRollup(fromDate string) error {
 
 	for _, k := range keys {
 		fmt.Printf("%s\n--------------\n", k)
-		for fulldesc, dur := range dailyRollups[k] {
-			issue := getTicketFromEntry(fulldesc)
-			description := strings.ReplaceAll(fulldesc, issue+" ", "")
-			_, err := updateJiraRollup(k, issue, description, dur)
+		for issueID, srp := range dailyRollups[k] {
+			fmt.Printf("k: %s, issue: %s, description: %s, dur %d\n", k, issueID, srp.description, srp.duration)
+			_, err := updateJiraRollup(k, issueID, srp.description, srp.duration)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "unable to sync with issue %s: %v", issue, err)
+				fmt.Fprintf(os.Stderr, "unable to sync with issue %s: %v", issueID, err)
 				continue
 			}
 		}
