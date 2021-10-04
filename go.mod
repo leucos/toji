@@ -8,7 +8,7 @@ require (
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/google/go-querystring v1.0.0 // indirect
-	github.com/jason0x43/go-toggl v0.0.0-20191006134724-98db1b5443ff
+	github.com/jason0x43/go-toggl v0.0.0-20210518224841-9af0e37bf5f1
 	github.com/mitchellh/mapstructure v1.3.0 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
