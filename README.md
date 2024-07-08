@@ -117,6 +117,9 @@ A `Makefile` is also provided if you wish with the following targets:
 
 See [Init](#init).
 
+**WARNING**: since v0.5.0, `toggle` config entries have been properly spelled as
+`toggl`. Please change you configurations accordingly. 
+
 ## Detailed usage
 
 You can see the complete usage executing:
