@@ -1,6 +1,6 @@
 module gitlab.com/leucos/toji
 
-go 1.17
+go 1.22
 
 require (
 	github.com/andygrunwald/go-jira v1.13.0
