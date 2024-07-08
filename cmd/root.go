@@ -53,6 +53,7 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+		fmt.Fprintf(os.Stderr, "error: configuration %s file not found: %v\n", configFile, err)
 	}
 }
 
