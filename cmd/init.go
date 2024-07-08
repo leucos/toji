@@ -58,7 +58,7 @@ func doInit() error {
 	// cfg := Configuration{}
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Printf("Toggle token: ")
+	fmt.Printf("Toggl token: ")
 	togglToken, err := reader.ReadString('\n')
 	if err != nil {
 		return nil
@@ -87,7 +87,7 @@ func doInit() error {
 		prefix = "profiles." + currentProfile + "."
 	}
 
-	viper.Set(prefix+"toggle.token", strings.TrimSpace(togglToken))
+	viper.Set(prefix+"toggl.token", strings.TrimSpace(togglToken))
 	viper.Set(prefix+"jira.username", strings.TrimSpace(jiraUser))
 	viper.Set(prefix+"jira.token", strings.TrimSpace(jiraToken))
 	viper.Set(prefix+"jira.url", strings.TrimSpace(jiraURL))

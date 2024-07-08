@@ -163,7 +163,7 @@ jira:
   token: abcd1234
   url: https://corp.atlassian.net
   username: me@corp.com
-toggle:
+toggl:
   token: z81c1760588de3cd8d4fb43479973039
 profiles:
   anothercorp:
@@ -171,7 +171,7 @@ profiles:
       token: egfh5678
       url: http://anothercorp.atlassian.net
       username: me@anothercorp.com
-    toggle:
+    toggl:
       token: zf8f15509a99d75879e03450a74d19b1
 ```
 

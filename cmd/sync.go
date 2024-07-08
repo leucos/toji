@@ -94,7 +94,7 @@ func doRollup(fromDate string) error {
 
 	fmt.Printf("\nRolling up toggl entries between %s and %s\n", from, to)
 
-	session := toggl.OpenSession(getConfig("toggle.token"))
+	session := toggl.OpenSession(getConfig("toggl.token"))
 	entries, err := session.GetTimeEntries(from, to)
 
 	if err != nil {
@@ -239,7 +239,7 @@ func doSync(fromDate string) error {
 
 	fmt.Printf("\nSyncing toggl entries between %s and %s\n", from, to)
 
-	session := toggl.OpenSession(getConfig("toggle.token"))
+	session := toggl.OpenSession(getConfig("toggl.token"))
 	entries, err := session.GetTimeEntries(from, to)
 
 	if err != nil {
@@ -474,7 +474,7 @@ func updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) (bool, error
 	}
 
 	// Search worklog for existing entries so we're idempotent
-	// Entries contain with `toggl_id: ID` to link to toggle entries
+	// Entries contain with `toggl_id: ID` to link to toggl entries
 	for _, wlr := range wl.Worklogs {
 		search := fmt.Sprintf("toggl_id: %d", togglEntry.ID)
 		re := regexp.MustCompile(search)
@@ -642,7 +642,7 @@ func updateJiraRollup(day, issueID, description string, seconds int64) (bool, er
 
 	dur := time.Duration(seconds * int64(time.Second))
 	// Search worklog for existing entries so we're idempotent
-	// Entries contain with `toggl_id: ID` to link to toggle entries
+	// Entries contain with `toggl_id: ID` to link to toggl entries
 	ref := strings.ReplaceAll(day, "/", "-")
 	for _, wlr := range wl.Worklogs {
 		search := fmt.Sprintf("rollup: %s/%s", tp.Username, ref)
