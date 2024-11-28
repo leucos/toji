@@ -2,18 +2,17 @@ PACKAGE  = toji
 DATE    ?= $(shell date +%FT%T%z)
 VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2> /dev/null || \
 			cat $(CURDIR)/.version 2> /dev/null || echo v0)
-PKGS     = $(or $(PKG),$(shell env GO111MODULE=on $(GO) list ./...))
+PKGS     = $(or $(PKG),$(shell $(GO) list ./...))
 TESTPKGS = $(shell env GO111MODULE=on $(GO) list -f '{{ if or .TestGoFiles .XTestGoFiles }}{{ .ImportPath }}{{ end }}' $(PKGS))
 BIN      = $(CURDIR)/bin
 
 GO      = go
 GODOC   = godoc
 TIMEOUT = 15
+
 V = 0
 Q = $(if $(filter 1,$V),,@)
 M = $(shell printf "\033[34;1m▶\033[0m")
-
-export GO111MODULE=on
 
 .PHONY: all
 all: fmt lint $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
@@ -63,27 +62,18 @@ $(BIN):
 	@mkdir -p $@
 $(BIN)/%: | $(BIN) ; $(info $(M) building $(REPOSITORY)…)
 	$Q tmp=$$(mktemp -d); \
-	   env GO111MODULE=off GOPATH=$$tmp GOBIN=$(BIN) $(GO) get $(REPOSITORY) \
+	   env GOPATH=$$tmp GOBIN=$(BIN) $(GO) get $(REPOSITORY) \
 		|| ret=$$?; \
 	   rm -rf $$tmp ; exit $$ret
 
-GOLINT = $(BIN)/golint
-$(BIN)/golint: REPOSITORY=golang.org/x/lint/golint
+# Tools
 
-GOCOVMERGE = $(BIN)/gocovmerge
-$(BIN)/gocovmerge: REPOSITORY=github.com/wadey/gocovmerge
-
-GOCOV = $(BIN)/gocov
-$(BIN)/gocov: REPOSITORY=github.com/axw/gocov/...
-
-GOCOVXML = $(BIN)/gocov-xml
-$(BIN)/gocov-xml: REPOSITORY=github.com/AlekSi/gocov-xml
-
-GO2XUNIT = $(BIN)/go2xunit
-$(BIN)/go2xunit: REPOSITORY=github.com/tebeka/go2xunit
-
-GOMODOUTDATED = $(BIN)/go-mod-outdated
-$(BIN)/go-mod-outdated: REPOSITORY=github.com/psampaz/go-mod-outdated
+GOLINT = $(GO) run golang.org/x/lint/golint@latest
+GOCOVMERGE = $(GO) run github.com/wadey/gocovmerge@latest
+GOCOV = $(GO) run github.com/axw/gocov/gocov@latest
+GOCOVXML = $(GO) run github.com/AlekSi/gocov-xml@latest
+GO2XUNIT = $(GO) run github.com/tebeka/go2xunit@latest
+GOMODOUTDATED = $(GO) run github.com/psampaz/go-mod-outdated@latest
 
 # Tests
 

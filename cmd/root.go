@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"gitlab.com/leucos/toji/internal/config"
 )
 
 var rootCmd = &cobra.Command{
@@ -17,6 +17,7 @@ var rootCmd = &cobra.Command{
 var (
 	configFile     string
 	currentProfile string
+	logLevel       string
 	// Version of current binary
 	Version string
 	// BuildDate of current binary
@@ -24,10 +25,14 @@ var (
 )
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	// cobra.OnInitialize(config.Init(configFile, currentProfile)())
+	cobra.OnInitialize(func() {
+		config.Init(configFile, currentProfile)
+	})
 
-	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", guessConfig(), "configuration file")
+	rootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", config.Current.Guess(), "configuration file")
 	rootCmd.PersistentFlags().StringVarP(&currentProfile, "profile", "p", "", "profile to use")
+	rootCmd.PersistentFlags().StringVarP(&logLevel, "loglevel", "l", "info", "log level")
 }
 
 // Run the CLI
@@ -37,6 +42,7 @@ func Run() error {
 	rootCmd.AddCommand(syncCmd)
 	rootCmd.AddCommand(versionCmd)
 
+	// Run command
 	if err := rootCmd.Execute(); err != nil {
 		return err
 	}
@@ -44,45 +50,24 @@ func Run() error {
 	return nil
 }
 
-func initConfig() {
-	viper.SetConfigFile(configFile)
-	viper.SetConfigType("yaml")
-	viper.SetEnvPrefix("toji")
-
-	err := viper.ReadInConfig() // Find and read the config file
-	viper.AutomaticEnv()
-
-	if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-		fmt.Fprintf(os.Stderr, "error: configuration %s file not found: %v\n", configFile, err)
-	}
+func parseLevel(s string) (slog.Level, error) {
+	var level slog.Level
+	var err = level.UnmarshalText([]byte(s))
+	return level, err
 }
 
-func checkProfile() {
-	if currentProfile == "" {
-		return
-	}
-
-	if !viper.IsSet("profiles." + currentProfile) {
-		fmt.Fprintf(os.Stderr, "error: profile %s not found in %s\n", currentProfile, configFile)
+func setupLogging() {
+	level, err := parseLevel(logLevel)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Invalid log level: %s\n", logLevel)
 		os.Exit(1)
 	}
-}
 
-func guessConfig() string {
-	if os.Getenv("XDG_CONFIG_HOME") != "" {
-		return filepath.Clean(os.Getenv("XDG_CONFIG_HOME") + "/toji/config.yml")
+	slog.Info("setting log level", "level", logLevel)
+
+	opts := &slog.HandlerOptions{
+		Level: level,
 	}
-
-	return filepath.Clean(os.Getenv("HOME") + "/.config/toji/config.yml")
-}
-
-// getConfig returns the selected config in respect to the selected profile
-// If the value is not found in the requested profile, the value from the
-// default profile will be used.
-func getConfig(c string) string {
-	if viper.IsSet("profiles." + currentProfile) {
-		return viper.GetString("profiles." + currentProfile + "." + c)
-	}
-
-	return viper.GetString(c)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, opts))
+	slog.SetDefault(logger)
 }

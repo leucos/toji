@@ -37,7 +37,7 @@ func init() {
 func doInit() error {
 	var err error
 	if _, err = os.Stat(configFile); err == nil && currentProfile == "" {
-		fmt.Fprintf(os.Stderr, "Config file %s already exists; refusing to overwrite default profile\n", configFile)
+		fmt.Fprintf(os.Stderr, "config file %s already exists; refusing to overwrite default profile\n", configFile)
 		return nil
 	}
 
@@ -51,7 +51,7 @@ func doInit() error {
 	}
 
 	if currentProfile != "" && viper.InConfig("profiles."+currentProfile) {
-		fmt.Fprintf(os.Stderr, "Profile %s in config file %s already exists; refusing to overwrite\n", currentProfile, configFile)
+		fmt.Fprintf(os.Stderr, "profile %s in config file %s already exists; refusing to overwrite\n", currentProfile, configFile)
 		return nil
 	}
 

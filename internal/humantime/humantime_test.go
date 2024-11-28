@@ -1,4 +1,4 @@
-package cmd
+package humantime
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_ParseTimeSpec(t *testing.T) {
+func Test_ParseTimePair(t *testing.T) {
 	cases := []struct {
 		startSpec string
 		endSpec   string
@@ -29,7 +29,7 @@ func Test_ParseTimeSpec(t *testing.T) {
 	}
 
 	for _, tt := range cases {
-		s, e, err := parseTimeSpec(tt.startSpec, tt.endSpec)
+		s, e, err := ParseTimePair(tt.startSpec, tt.endSpec)
 		assert.NoError(t, err, "unexpected error %v", err)
 		assert.Equal(t, tt.start, s, "expected start %s but got %s", tt.start, s)
 		assert.Equal(t, tt.end, e, "expected end %s but got %s", tt.end, e)
