@@ -60,14 +60,36 @@ func (c Config) Guess() string {
 // If the value is not found in the requested profile, the value from the
 // default profile will be used.
 func (c Config) Get(key string) string {
-	if viper.IsSet("profiles." + c.profile) {
+	if viper.IsSet("profiles." + c.profile + "." + key) {
 		return viper.GetString("profiles." + c.profile + "." + key)
 	}
 
 	return viper.GetString(key)
 }
 
-// checkConfig checks if a configuration value is set
+// GetInt returns the selected config in respect to the selected profile
+// If the value is not found in the requested profile, the value from the
+// default profile will be used.
+func (c Config) GetInt(key string) int {
+	if viper.IsSet("profiles." + c.profile + "." + key) {
+		return viper.GetInt("profiles." + c.profile + "." + key)
+	}
+
+	return viper.GetInt(key)
+}
+
+// GetMapString returns the selected config in respect to the selected profile
+// If the value is not found in the requested profile, the value from the
+// default profile will be used.
+func (c Config) GetMapString(key string) map[string]string {
+	if viper.IsSet("profiles." + c.profile + "." + key) {
+		return viper.GetStringMapString("profiles." + c.profile + "." + key)
+	}
+
+	return viper.GetStringMapString(key)
+}
+
+// Check checks if a configuration value is set
 func (c Config) Check(key string) bool {
 	if viper.IsSet("profiles." + c.profile) {
 		return viper.IsSet("profiles." + c.profile + "." + key)

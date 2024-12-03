@@ -88,7 +88,7 @@ func doSync(fromDate, toDate string, dryRun, utc, interactive bool, rounding int
 
 	if config.Current.Check("everhour") {
 		fmt.Println("using Everhour driver")
-		drv, err = everhour.New(from, to,
+		drv, err = everhour.New(from, to, config.Current.Get("everhour.token"),
 			drivers.WithDryRun(dryRun),
 			drivers.WithRoundingMins(rounding),
 			drivers.WithTimeZone(time.Local),
