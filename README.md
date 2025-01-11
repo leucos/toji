@@ -30,7 +30,7 @@ You can also [build](#building) it yourself or install it with [binenv](https://
 ## Usage
 
 Get your [Toggl API Token](https://toggl.com/app/profile) and
-[Atlassian API](https://id.atlassian.com/manage-profile/security) tokens handy,
+[Atlassian API](p) tokens handy,
 and create a configuration calling:
 
 ```bash

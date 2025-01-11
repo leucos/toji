@@ -23,23 +23,23 @@ var validArgs = []string{
 }
 
 var (
-	toDate      string
-	dryRun      bool
-	utc         bool
-	interactive bool
-	rollup      bool
-	rounding    int
-	onlyIssues  []string
+	toDate string
+	dryRun bool
+	utc    bool
+	// interactive bool
+	// rollup      bool
+	// rounding    int
+	onlyIssues []string
 )
 
 func init() {
 	syncCmd.Flags().StringVarP(&toDate, "to", "t", "", "ending date")
 	syncCmd.Flags().BoolVarP(&dryRun, "dryrun", "n", false, "do not update Jira entries")
 	syncCmd.Flags().BoolVarP(&utc, "utc", "u", false, "display entries using UTC in the terminal")
-	syncCmd.Flags().BoolVarP(&interactive, "interactive", "i", false, "asks a comment for each worklog interactively")
-	syncCmd.Flags().BoolVarP(&rollup, "rollup", "R", false, "summarize times daily per ticket")
-	syncCmd.Flags().IntVarP(&rounding, "rounding", "r", 0, "round rollup times to this value (in minutes)")
-	syncCmd.Flags().StringSliceVarP(&onlyIssues, "only", "o", nil, "only update these comma-separated entries")
+	// syncCmd.Flags().BoolVarP(&interactive, "interactive", "i", false, "asks a comment for each worklog interactively")
+	// syncCmd.Flags().BoolVarP(&rollup, "rollup", "R", false, "summarize times daily per ticket")
+	// syncCmd.Flags().IntVarP(&rounding, "rounding", "r", 0, "round rollup times to this value (in minutes)")
+	syncCmd.Flags().StringSliceVarP(&onlyIssues, "only", "o", nil, "only update these comma-separated toggl entries (regexp allowed)")
 
 	syncCmd.RegisterFlagCompletionFunc("to", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		return validArgs, cobra.ShellCompDirectiveDefault
@@ -56,13 +56,13 @@ var syncCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		setupLogging()
-		return doSync(args[0], toDate, dryRun, utc, interactive, rounding, onlyIssues)
+		return doSync(args[0], toDate, dryRun, utc, onlyIssues)
 	},
 	// SilenceUsage: true,
 	ValidArgs: validArgs,
 }
 
-func doSync(fromDate, toDate string, dryRun, utc, interactive bool, rounding int, onlyIssues []string) error {
+func doSync(fromDate, toDate string, dryRun, utc bool, onlyIssues []string) error {
 	var (
 		drv drivers.ConfigurableReplica
 		err error
@@ -77,7 +77,7 @@ func doSync(fromDate, toDate string, dryRun, utc, interactive bool, rounding int
 		slog.Debug("using Jira driver")
 		drv, err = jira.New(from, to,
 			drivers.WithDryRun(dryRun),
-			drivers.WithRoundingMins(rounding),
+			// drivers.WithRoundingMins(rounding),
 			drivers.WithTimeZone(time.Local),
 			drivers.WithIssues(onlyIssues),
 		)
@@ -87,10 +87,10 @@ func doSync(fromDate, toDate string, dryRun, utc, interactive bool, rounding int
 	}
 
 	if config.Current.Check("everhour") {
-		fmt.Println("using Everhour driver")
+		slog.Debug("using Everhour driver")
 		drv, err = everhour.New(from, to, config.Current.Get("everhour.token"),
 			drivers.WithDryRun(dryRun),
-			drivers.WithRoundingMins(rounding),
+			// drivers.WithRoundingMins(rounding),
 			drivers.WithTimeZone(time.Local),
 			drivers.WithIssues(onlyIssues),
 		)
@@ -102,11 +102,13 @@ func doSync(fromDate, toDate string, dryRun, utc, interactive bool, rounding int
 	c := make(chan drivers.SyncedEntry, 100)
 	slog.Debug("result channel created")
 
-	if rollup {
-		go drv.Rollup(c)
-	} else {
-		go drv.Sync(c)
-	}
+	// if rollup {
+	// 	go drv.Rollup(c)
+	// } else {
+	// 	go drv.Sync(c)
+	// }
+
+	go drv.Sync(c)
 
 	slog.Debug("watching channel messages")
 

@@ -12,6 +12,7 @@ import (
 	"github.com/jason0x43/go-toggl"
 	"gitlab.com/leucos/toji/drivers"
 	"gitlab.com/leucos/toji/internal/config"
+	t "gitlab.com/leucos/toji/internal/toggl"
 )
 
 type Jira struct {
@@ -34,19 +35,24 @@ func New(from, to time.Time, opts ...drivers.OptionFunc) (Jira, error) {
 }
 
 func (j Jira) Sync(c chan drivers.SyncedEntry) {
+	defer close(c)
+
+	// Check if rollup is requested in config
+	if config.Current.Get("jira.rollup") == "true" {
+		slog.Debug("rollup mode requested")
+		err := j.doRollup(c)
+		if err != nil {
+			slog.Error("unrecoverable error in Jira.Rollup", "err", err)
+		}
+		return
+	}
+
+	// Otherwise, do the regular sync
+	slog.Debug("normal mode requested")
 	err := j.doSync(c)
 	if err != nil {
 		slog.Error("unrecoverable error in Jira.Sync", "err", err)
 	}
-	close(c)
-}
-
-func (j Jira) Rollup(c chan drivers.SyncedEntry) {
-	err := j.doRollup(c)
-	if err != nil {
-		slog.Error("unrecoverable error in Jira.Rollup", "err", err)
-	}
-	close(c)
 }
 
 func (j Jira) doRollup(c chan drivers.SyncedEntry) error {
@@ -125,13 +131,17 @@ func (j Jira) doRollup(c chan drivers.SyncedEntry) error {
 		// 	currentProject = project
 		// }
 
-		if e.StopTime().IsZero() {
-			slog.Debug("skipping currently running time entry", "ticket", project)
-			continue
+		if j.base.Issues != nil {
+			if !t.CheckIssueMatches(j.base.Issues, e.Description) {
+				//!isInSlice(project, j.base.Issues) {
+				slog.Debug("skipping issue since it is not selected", "issue", project)
+				continue
+			}
+			slog.Debug("including issue since it is selected", "issue", project)
 		}
 
-		if j.base.Issues != nil && !isInSlice(project, j.base.Issues) {
-			slog.Debug("skipping issue since it is not selected", "issue", project)
+		if e.StopTime().IsZero() {
+			slog.Debug("skipping currently running time entry", "ticket", project)
 			continue
 		}
 
@@ -145,13 +155,15 @@ func (j Jira) doRollup(c chan drivers.SyncedEntry) error {
 		}
 	}
 
+	round := int64(config.Current.GetInt("jira.rounding"))
+
 	// adjust rounding if needed
-	if j.base.Rounding != 0 {
+	if round > 0 {
 		for day, pmap := range dailyRollups {
 			for issue, srp := range pmap {
 				// *60 is needed since rounding is expressed as minutes
 				// fmt.Printf("day: %s issue: %s\n", day, issue)
-				dailyRollups[day][issue].duration += int64(j.base.Rounding*60) - srp.duration%int64(j.base.Rounding*60)
+				dailyRollups[day][issue].duration += int64(round*60) - srp.duration%int64(round*60)
 			}
 		}
 	}
@@ -360,7 +372,7 @@ func (j Jira) updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) (bo
 		refStop = togglEntry.StopTime().UTC()
 	}
 
-	startText := refStart.Format("15:04")
+	// startText := refStart.Format("15:04")
 	stopText := refStop.Format("15:04")
 
 	// Get difference in days between start and stop
@@ -378,7 +390,7 @@ func (j Jira) updateJiraTracking(issueID string, togglEntry toggl.TimeEntry) (bo
 	commentInIssue := false
 
 	if j.base.DryRun {
-		slog.Info("would insert", "start", startText,
+		slog.Info("would insert", "start", refStart,
 			"stop", stopText, "duration", durText,
 			"toggl.ID", togglEntry.ID, "issue", issueID)
 
@@ -506,27 +518,8 @@ func (j *Jira) updateJiraRollup(day, issueID, description string, seconds int64)
 
 	if j.base.DryRun {
 		slog.Info("dry run mode entry", "day", day, "issue", issueID, "description", description, "duration", durText)
-
-		// if interactive {
-		// 	fmt.Println("                    asking confirmation interactively")
-		// }
-
 		return true, nil
 	}
-
-	// if interactive {
-	// 	reader := bufio.NewReader(os.Stdin)
-	// 	fmt.Printf("    insert woklog entry for %s %q (%s) [y/n] ? ",
-	// 		issueID,
-	// 		description,
-	// 		durText,
-	// 	)
-	// 	line, _ := reader.ReadString('\n')
-	// 	line = strings.TrimSpace(line)
-	// 	if line != "y" {
-	// 		return true, nil
-	// 	}
-	// }
 
 	startTime, err := time.Parse("2006/01/02 Mon", day)
 	if err != nil {

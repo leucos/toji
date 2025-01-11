@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jason0x43/go-toggl"
+	"github.com/leucos/go-toggl"
 	"gitlab.com/leucos/toji/api/everhour"
 	"gitlab.com/leucos/toji/drivers"
 	"gitlab.com/leucos/toji/internal/config"
@@ -104,11 +104,21 @@ func (e EverHour) doSync(c chan drivers.SyncedEntry) error {
 			continue
 		}
 
+		if e.base.Issues != nil {
+			if !t.CheckIssueMatches(e.base.Issues, entry.Description) {
+				//!isInSlice(project, j.base.Issues) {
+				slog.Debug("skipping issue since it is not selected", "issue", entry.Description)
+				continue
+			}
+			slog.Debug("including issue since it is selected", "issue", entry.Description)
+		}
+
 		// Extract Toggl project name from entry
 		name, err := t.GetProjectNameFromID(session, config.Current.GetInt("toggl.workspace"), *entry.Pid)
 		if err != nil {
 			return err
 		}
+		slog.Debug("got project name from id", "id", *entry.Pid, "name", name)
 
 		// Find the corresponding Everhour project & task
 		if ehProject, ok = everHourMapper[name]; !ok {
@@ -117,10 +127,17 @@ func (e EverHour) doSync(c chan drivers.SyncedEntry) error {
 			continue
 		}
 
-		fmt.Printf("\nEntry desc: %s\n", entry.Description)
-		fmt.Printf("\tproject name: %s\n", name)
-		fmt.Printf("\tstart: %s\n", entry.Start)
-		fmt.Printf("\tmappedProject : %d (%s)\n", entry.Pid, ehProject)
+		// fmt.Printf("\nEntry desc: %s\n", entry.Description)
+		// fmt.Printf("\tproject name: %s\n", name)
+		// fmt.Printf("\tstart: %s\n", entry.Start)
+		// fmt.Printf("\tmappedProject : %d (%s)\n", entry.Pid, ehProject.name)
+
+		slog.Debug("found toggl/everhour mapping",
+			"toggl", name, "everhour", ehProject.name,
+			"toggl.ID", entry.ID,
+			"toggl.Description", entry.Description,
+			"toggl.Start", entry.Start,
+		)
 
 		// Find associated project in everhour if needed
 		// This lazy loads the mappedProject struct and limits EH API calls
@@ -143,11 +160,11 @@ func (e EverHour) doSync(c chan drivers.SyncedEntry) error {
 			return err
 		}
 		if task == nil {
-			fmt.Printf("Task not found: %s\n", entry.Description)
+			slog.Warn("everhour task not found", "name", entry.Description)
 			continue
 		}
 
-		fmt.Printf("\tTask: %s (%s)\n", task.Name, task.ID)
+		slog.Debug("everhour task found", "name", task.Name, "id", task.ID)
 
 		// Get time entries for task
 		entries, err := e.client.GetTaskTimeRecords(task.ID)
@@ -156,10 +173,10 @@ func (e EverHour) doSync(c chan drivers.SyncedEntry) error {
 		}
 
 		for _, e := range entries {
-			fmt.Printf("\t\t%s: %d (%s)\n", e.Date, e.Time, e.Comment)
+			slog.Debug("everhour entry", "date", e.Date, "time", e.Time, "comment", e.Comment)
 			// Check if toggl entry s present in comments
 			if strings.Contains(e.Comment, fmt.Sprintf("Toggl entry %d", entry.ID)) {
-				fmt.Printf("\t\t\talready present\n")
+				slog.Debug("toggl time entry already present in everhour task", "date", e.Date, "time", e.Time, "comment", e.Comment)
 				alreadyPresent = true
 				break
 			}
@@ -173,26 +190,33 @@ func (e EverHour) doSync(c chan drivers.SyncedEntry) error {
 		// Round if configuration says so
 		round := int64(config.Current.GetInt("toggl.rounding")) * 60
 		if round > 0 {
-			fmt.Printf("\t\trounding to %dm requested\n", round)
+			slog.Debug("rounding is set", "rounding", round)
 			duration := entry.Duration
 			// check remainder
 			remainder := duration % round
 			if remainder != 0 {
 				rounded := duration + (round - remainder)
-				err = entry.SetDuration(rounded)
-				if err != nil {
-					slog.Error("unable to change toggl entry duration", "err", err, "entry.ID", entry.ID, "entry.Description", entry.Description)
-				}
-				entry, err = session.UpdateTimeEntry(entry)
-				if err != nil {
-					slog.Error("unable to update toggl entry", "err", err, "entry.ID", entry.ID, "entry.Description", entry.Description)
+				if e.base.DryRun {
+					slog.Info("dry-run: would have rounded toggl entry", "entry.ID", entry.ID, "entry.Description", entry.Description, "configured rounding seconds", round, "initial duration", duration, "rounded duration", rounded)
 				} else {
-					slog.Debug("rounded toggl entry", "entry.ID", entry.ID, "entry.Description", entry.Description, "duration", duration, "rounded", rounded)
-					fmt.Printf("\t\tRounded toggl entry %d %s from %d to %d\n", entry.ID, entry.Description, duration, rounded)
+					err = entry.SetDuration(rounded)
+					if err != nil {
+						slog.Error("unable to change toggl entry duration", "err", err, "entry.ID", entry.ID, "entry.Description", entry.Description)
+					}
+					entry, err = session.UpdateTimeEntry(entry)
+					if err != nil {
+						slog.Error("unable to update toggl entry", "err", err, "entry.ID", entry.ID, "entry.Description", entry.Description)
+					} else {
+						slog.Debug("rounded toggl entry", "entry.ID", entry.ID, "entry.Description", entry.Description, "configured rounding", round/60, "initial duration", duration, "rounded duration", rounded)
+					}
 				}
 			}
 		}
 
+		if e.base.DryRun {
+			slog.Info("dry-run: would have synced entry", "entry.ID", entry.ID, "date", entry.Start.Format("2006/01/02 Mon"), "duration", entry.Duration, "task", task.Name)
+			continue
+		}
 		// Create time entry
 		err = e.client.AddTime(
 			task.ID,
@@ -206,6 +230,8 @@ func (e EverHour) doSync(c chan drivers.SyncedEntry) error {
 			continue
 		}
 
+		slog.Info("synced entry", "date", entry.Start.Format("2006/01/02 Mon"), "duration", entry.Duration, "task", task.Name)
+
 		c <- drivers.SyncedEntry{
 			Date:     entry.Start.Format("2006/01/02 Mon"),
 			Duration: entry.Duration,
@@ -214,8 +240,12 @@ func (e EverHour) doSync(c chan drivers.SyncedEntry) error {
 		}
 	}
 
+	// loop over Toggl resources types and show stats
+	session.EnableLog(slog.Default())
+	session.ShowStats(config.Current.GetInt("toggl.workspace"))
 	return nil
 }
 
 func (e EverHour) Rollup(c chan drivers.SyncedEntry) {
+
 }
